@@ -1,0 +1,77 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "title": "Tipo",
+      "enum": [
+        "A Receber",
+        "A Pagar"
+      ]
+    },
+    "reference_type": {
+      "type": "string",
+      "title": "Refer\u00eancia",
+      "enum": [
+        "Venda",
+        "Nota Fiscal"
+      ]
+    },
+    "reference_id": {
+      "type": "string",
+      "title": "ID da Refer\u00eancia"
+    },
+    "person_name": {
+      "type": "string",
+      "title": "Nome (Cliente/Fornecedor)"
+    },
+    "amount": {
+      "type": "number",
+      "title": "Valor"
+    },
+    "due_date": {
+      "type": "string",
+      "title": "Data de Vencimento",
+      "format": "date-time"
+    },
+    "paid_date": {
+      "type": "string",
+      "title": "Data de Pagamento",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Pendente",
+        "Pago",
+        "Vencido",
+        "Cancelado"
+      ],
+      "default": "Pendente"
+    },
+    "payment_method": {
+      "type": "string",
+      "title": "Forma de Pagamento",
+      "enum": [
+        "Dinheiro",
+        "PIX",
+        "Cart\u00e3o Cr\u00e9dito",
+        "Cart\u00e3o D\u00e9bito",
+        "Boleto",
+        "Transfer\u00eancia"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "title": "Observa\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "type",
+    "person_name",
+    "amount",
+    "status"
+  ]
+}

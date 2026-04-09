@@ -1,0 +1,83 @@
+{
+  "name": "Invoice",
+  "type": "object",
+  "properties": {
+    "number": {
+      "type": "string",
+      "title": "N\u00famero da NF"
+    },
+    "supplier_id": {
+      "type": "string",
+      "title": "Fornecedor"
+    },
+    "supplier_name": {
+      "type": "string",
+      "title": "Nome do Fornecedor"
+    },
+    "items": {
+      "type": "array",
+      "title": "Itens",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "total_amount": {
+      "type": "number",
+      "title": "Valor Total"
+    },
+    "freight": {
+      "type": "number",
+      "title": "Frete"
+    },
+    "payment_method": {
+      "type": "string",
+      "title": "Forma de Pagamento",
+      "enum": [
+        "PIX",
+        "Dinheiro",
+        "Cart\u00e3o Cr\u00e9dito",
+        "Boleto",
+        "Transfer\u00eancia"
+      ]
+    },
+    "issue_date": {
+      "type": "string",
+      "title": "Data de Emiss\u00e3o",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Pendente",
+        "Paga",
+        "Vencida",
+        "Cancelada"
+      ],
+      "default": "Paga"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Observa\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "number",
+    "supplier_name",
+    "total_amount"
+  ]
+}

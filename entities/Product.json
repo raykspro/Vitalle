@@ -1,0 +1,73 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Nome do Produto"
+    },
+    "description": {
+      "type": "string",
+      "title": "Descri\u00e7\u00e3o"
+    },
+    "category": {
+      "type": "string",
+      "title": "Categoria",
+      "enum": [
+        "Camisetas",
+        "Cal\u00e7as",
+        "Vestidos",
+        "Saias",
+        "Blusas",
+        "Jaquetas",
+        "Shorts",
+        "Acess\u00f3rios",
+        "Outros"
+      ]
+    },
+    "color": {
+      "type": "string",
+      "title": "Cor"
+    },
+    "brand": {
+      "type": "string",
+      "title": "Marca"
+    },
+    "cost_price": {
+      "type": "number",
+      "title": "Pre\u00e7o de Custo"
+    },
+    "sell_price": {
+      "type": "number",
+      "title": "Pre\u00e7o de Venda"
+    },
+    "sku": {
+      "type": "string",
+      "title": "C\u00f3digo/SKU"
+    },
+    "image_url": {
+      "type": "string",
+      "title": "Foto Principal"
+    },
+    "images": {
+      "type": "array",
+      "title": "Fotos",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "name",
+    "sell_price"
+  ]
+}

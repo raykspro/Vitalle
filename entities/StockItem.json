@@ -1,0 +1,43 @@
+{
+  "name": "StockItem",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "title": "Produto"
+    },
+    "product_name": {
+      "type": "string",
+      "title": "Nome do Produto"
+    },
+    "size": {
+      "type": "string",
+      "title": "Tamanho",
+      "enum": [
+        "PP",
+        "P",
+        "M",
+        "G",
+        "GG",
+        "3G",
+        "\u00danico"
+      ]
+    },
+    "color": {
+      "type": "string",
+      "title": "Cor"
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantidade",
+      "default": 0
+    }
+  },
+  "required": [
+    "product_id",
+    "product_name",
+    "size",
+    "color",
+    "quantity"
+  ]
+}

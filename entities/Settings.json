@@ -1,0 +1,27 @@
+{
+  "name": "Settings",
+  "type": "object",
+  "properties": {
+    "store_name": {
+      "type": "string",
+      "title": "Nome da Loja"
+    },
+    "logo_url": {
+      "type": "string",
+      "title": "URL da Logo"
+    },
+    "phone": {
+      "type": "string",
+      "title": "Telefone"
+    },
+    "address": {
+      "type": "string",
+      "title": "Endere\u00e7o"
+    },
+    "instagram": {
+      "type": "string",
+      "title": "Instagram"
+    }
+  },
+  "required": []
+}

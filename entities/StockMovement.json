@@ -1,0 +1,62 @@
+{
+  "name": "StockMovement",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "title": "Tipo",
+      "enum": [
+        "Entrada",
+        "Sa\u00edda"
+      ]
+    },
+    "product_id": {
+      "type": "string",
+      "title": "ID do Produto"
+    },
+    "product_name": {
+      "type": "string",
+      "title": "Produto"
+    },
+    "size": {
+      "type": "string",
+      "title": "Tamanho"
+    },
+    "color": {
+      "type": "string",
+      "title": "Cor"
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantidade"
+    },
+    "reference_type": {
+      "type": "string",
+      "title": "Origem",
+      "enum": [
+        "Venda",
+        "Ajuste Manual",
+        "Nota Fiscal"
+      ]
+    },
+    "reference_id": {
+      "type": "string",
+      "title": "ID de Refer\u00eancia"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Observa\u00e7\u00f5es"
+    },
+    "movement_date": {
+      "type": "string",
+      "title": "Data/Hora",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "type",
+    "product_name",
+    "quantity",
+    "movement_date"
+  ]
+}
