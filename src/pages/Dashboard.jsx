@@ -59,7 +59,9 @@ export default function Dashboard() {
       });
       setLoading(false);
     }
-    load();
+    load().catch((error) => {
+      console.error("Erro ao carregar dados do dashboard:", error);
+    });
   }, []);
 
   if (loading) {
