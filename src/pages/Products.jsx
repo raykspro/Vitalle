@@ -30,7 +30,6 @@ export default function Products() {
       setProducts(data);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
-      alert("Falha ao carregar produtos. Tente novamente mais tarde.");
     } finally {
       setLoading(false);
     }
