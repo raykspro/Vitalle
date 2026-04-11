@@ -23,14 +23,22 @@ export default function Sales() {
   const [form, setForm] = useState({ customer_id: "", customer_name: "", payment_method: "", discount: 0, notes: "", items: [] });
   const [currentItem, setCurrentItem] = useState({ stock_item_id: "", quantity: 1 });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal).catch((error) => {
+      if (error.name !== "AbortError") {
+        console.error("Erro ao carregar dados das vendas:", error);
+      }
+    }).finally(() => setLoading(false));
+    return () => controller.abort();
+  }, []);
 
-  async function loadData() {
-    const [s, c, st] = await Promise.all([
-      cline.entities.Sale.list("-created_date", 200),
-      cline.entities.Customer.list("-created_date", 500),
-      cline.entities.StockItem.list("-created_date", 500),
-    ]);
+   async function loadData(signal) {
+     const [s, c, st] = await Promise.all([
+       cline.entities.Sale.list("-created_date", 200, { signal }),
+       cline.entities.Customer.list("-created_date", 500, { signal }),
+       cline.entities.StockItem.list("-created_date", 500, { signal }),
+     ]);
     setSales(s);
     setCustomers(c);
     setStockItems(st);
