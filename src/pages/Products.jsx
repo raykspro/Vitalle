@@ -29,7 +29,7 @@ export default function Products() {
       const data = await cline.entities.Product.list("-created_date", 200);
       setProducts(data);
     } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
+      // Removido log de erro para evitar mensagens desnecessárias
     } finally {
       setLoading(false);
     }
