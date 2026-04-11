@@ -28,14 +28,22 @@ export default function Invoices() {
   });
   const [currentItem, setCurrentItem] = useState({ product_name: "", quantity: "", unit_price: "" });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal).catch((error) => {
+      if (error.name !== "AbortError") {
+        console.error("Erro ao carregar dados das notas fiscais:", error);
+      }
+    }).finally(() => setLoading(false));
+    return () => controller.abort();
+  }, []);
 
-  async function loadData() {
-    const [inv, sup, prods] = await Promise.all([
-      cline.entities.Invoice.list("-created_date", 200),
-      cline.entities.Supplier.list("-created_date", 200),
-      cline.entities.Product.list("-created_date", 200),
-    ]);
+   async function loadData(signal) {
+     const [inv, sup, prods] = await Promise.all([
+       cline.entities.Invoice.list("-created_date", 200, { signal }),
+       cline.entities.Supplier.list("-created_date", 200, { signal }),
+       cline.entities.Product.list("-created_date", 200, { signal }),
+     ]);
     setInvoices(inv);
     setSuppliers(sup);
     setProducts(prods);
