@@ -20,16 +20,15 @@ export default function Customers() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-setLoading(true);
-try {
-  const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
-  if (error) {
-    console.error("Erro ao carregar clientes:", error);
-  }
-  setCustomers(data || []);
-} finally {
-  setLoading(false);
-}
+      try {
+        const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+        if (error) {
+          console.error("Erro ao carregar clientes:", error);
+        }
+        setCustomers(data || []);
+      } finally {
+        setLoading(false);
+      }
   }
 
   function openNew() {
