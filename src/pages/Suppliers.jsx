@@ -17,10 +17,18 @@ export default function Suppliers() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: "", cnpj: "", phone: "", email: "", contact_person: "", address: "", notes: "" });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal).catch((error) => {
+      if (error.name !== "AbortError") {
+        console.error("Erro ao carregar dados dos fornecedores:", error);
+      }
+    }).finally(() => setLoading(false));
+    return () => controller.abort();
+  }, []);
 
-  async function loadData() {
-    const data = await cline.entities.Supplier.list("-created_date", 200);
+   async function loadData(signal) {
+     const data = await cline.entities.Supplier.list("-created_date", 200, { signal });
     setSuppliers(data);
     setLoading(false);
   }
