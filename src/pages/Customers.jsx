@@ -134,7 +134,7 @@ if (error) console.error("Erro ao excluir cliente:", error);
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+<Dialog open={dialogOpen} onOpenChange={(isOpen) => setDialogOpen(isOpen)}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
