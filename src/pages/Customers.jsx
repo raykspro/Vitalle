@@ -20,10 +20,16 @@ export default function Customers() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
-    if (error) console.error(error);
-    setCustomers(data || []);
-    setLoading(false);
+setLoading(true);
+try {
+  const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+  if (error) {
+    console.error("Erro ao carregar clientes:", error);
+  }
+  setCustomers(data || []);
+} finally {
+  setLoading(false);
+}
   }
 
   function openNew() {
@@ -43,9 +49,11 @@ export default function Customers() {
 
   async function handleSave() {
     if (editing) {
-      await supabase.from('customers').update(form).eq('id', editing.id);
+const { error } = await supabase.from('customers').update(form).eq('id', editing.id);
+if (error) console.error("Erro ao atualizar cliente:", error);
     } else {
-      await supabase.from('customers').insert([form]);
+const { error } = await supabase.from('customers').insert([form]);
+if (error) console.error("Erro ao inserir cliente:", error);
     }
     setDialogOpen(false);
     loadData();
@@ -53,7 +61,8 @@ export default function Customers() {
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este cliente?")) return;
-    await supabase.from('customers').delete().eq('id', id);
+const { error } = await supabase.from('customers').delete().eq('id', id);
+if (error) console.error("Erro ao excluir cliente:", error);
     loadData();
   }
 
