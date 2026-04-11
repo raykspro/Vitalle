@@ -25,9 +25,15 @@ export default function Products() {
   }, []);
 
   async function loadProducts() {
-    const data = await cline.entities.Product.list("-created_date", 200);
-    setProducts(data);
-    setLoading(false);
+    try {
+      const data = await cline.entities.Product.list("-created_date", 200);
+      setProducts(data);
+    } catch (error) {
+      console.error("Erro ao carregar produtos:", error);
+      alert("Falha ao carregar produtos. Tente novamente mais tarde.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleImageUpload(e) {
