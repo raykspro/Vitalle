@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Plus, Search, ShoppingCart, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,9 +27,9 @@ export default function Sales() {
 
   async function loadData() {
     const [s, c, st] = await Promise.all([
-      base44.entities.Sale.list("-created_date", 200),
-      base44.entities.Customer.list("-created_date", 500),
-      base44.entities.StockItem.list("-created_date", 500),
+      cline.entities.Sale.list("-created_date", 200),
+      cline.entities.Customer.list("-created_date", 500),
+      cline.entities.StockItem.list("-created_date", 500),
     ]);
     setSales(s);
     setCustomers(c);
@@ -68,7 +68,7 @@ export default function Sales() {
 
   async function handleSave() {
     // Fetch product prices
-    const products = await base44.entities.Product.list("-created_date", 200);
+    const products = await cline.entities.Product.list("-created_date", 200);
     const priceMap = {};
     products.forEach((p) => { priceMap[p.id] = p.sell_price || 0; });
 
@@ -96,7 +96,7 @@ export default function Sales() {
       notes: form.notes,
     };
 
-    const created = await base44.entities.Sale.create(saleData);
+    const created = await cline.entities.Sale.create(saleData);
 
     // Update stock and log movements
     for (const item of form.items) {
@@ -104,11 +104,11 @@ export default function Sales() {
         s.product_id === item.product_id && s.size === item.size && s.color === item.color
       );
       if (stock) {
-        await base44.entities.StockItem.update(stock.id, {
+        await cline.entities.StockItem.update(stock.id, {
           quantity: Math.max(0, (stock.quantity || 0) - item.quantity),
         });
       }
-      await base44.entities.StockMovement.create({
+      await cline.entities.StockMovement.create({
         type: "Saída",
         product_id: item.product_id,
         product_name: item.product_name,
@@ -123,7 +123,7 @@ export default function Sales() {
 
     // Create payment if "Fiado"
     if (form.payment_method === "Fiado") {
-      await base44.entities.Payment.create({
+      await cline.entities.Payment.create({
         type: "A Receber",
         reference_type: "Venda",
         reference_id: created.id,
@@ -140,7 +140,7 @@ export default function Sales() {
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir esta venda?")) return;
-    await base44.entities.Sale.delete(id);
+    await cline.entities.Sale.delete(id);
     loadData();
   }
 

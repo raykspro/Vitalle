@@ -35,8 +35,8 @@ export default function Layout() {
   const [storeSettings, setStoreSettings] = useState(null);
 
   useEffect(() => {
-    import('@/api/base44Client').then(({ base44 }) => {
-      base44.entities.Settings.list().then(data => {
+    import('@/api/clineClient').then(({ cline }) => {
+      cline.entities.Settings.list().then(data => {
         if (data.length > 0) setStoreSettings(data[0]);
       });
     });

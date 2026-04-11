@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Search, ArrowDownCircle, ArrowUpCircle, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,8 +19,8 @@ export default function StockHistory() {
 
   useEffect(() => {
     Promise.all([
-      base44.entities.StockMovement.list("-movement_date", 500),
-      base44.entities.Product.list("-created_date", 200),
+      cline.entities.StockMovement.list("-movement_date", 500),
+      cline.entities.Product.list("-created_date", 200),
     ]).then(([movs, prods]) => {
       setMovements(movs);
       const map = {};

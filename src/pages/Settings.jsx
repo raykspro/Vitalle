@@ -1,13 +1,26 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Camera, Loader2, Save, Store } from "lucide-react";
 
+/**
+ * @typedef {object} SettingsForm
+ * @property {string} store_name
+ * @property {string} logo_url
+ * @property {string} phone
+ * @property {string} address
+ * @property {string} instagram
+ */
+
+/**
+ * @typedef {SettingsForm & { id: string | number }} StoreSettings
+ */
+
 export default function Settings() {
-  const [settings, setSettings] = useState(null);
-  const [form, setForm] = useState({ store_name: "", logo_url: "", phone: "", address: "", instagram: "" });
+  const [settings, setSettings] = useState(/** @type {StoreSettings | null} */ (null));
+  const [form, setForm] = useState(/** @type {SettingsForm} */ ({ store_name: "", logo_url: "", phone: "", address: "", instagram: "" }));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -15,36 +28,75 @@ export default function Settings() {
   useEffect(() => { loadSettings(); }, []);
 
   async function loadSettings() {
-    const data = await base44.entities.Settings.list();
+    const data = await cline.entities.Settings.list();
     if (data.length > 0) {
-      setSettings(data[0]);
+      const loadedSettings = /** @type {StoreSettings} */ (data[0]);
+      setSettings(loadedSettings);
       setForm({
-        store_name: data[0].store_name || "",
-        logo_url: data[0].logo_url || "",
-        phone: data[0].phone || "",
-        address: data[0].address || "",
-        instagram: data[0].instagram || "",
+        store_name: loadedSettings.store_name || "",
+        logo_url: loadedSettings.logo_url || "",
+        phone: loadedSettings.phone || "",
+        address: loadedSettings.address || "",
+        instagram: loadedSettings.instagram || "",
       });
     }
     setLoading(false);
   }
 
+  /**
+   * @param {import("react").ChangeEvent<HTMLInputElement>} e
+   */
   async function handleLogoUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await cline.integrations.Core.UploadFile({ file });
     setForm(prev => ({ ...prev, logo_url: file_url }));
     setUploading(false);
+  }
+
+  /**
+   * @param {import("react").ChangeEvent<HTMLInputElement>} e
+   */
+  function handleStoreNameChange(e) {
+    setForm({ ...form, store_name: e.target.value });
+  }
+
+  /**
+   * @param {import("react").ChangeEvent<HTMLInputElement>} e
+   */
+  function handlePhoneChange(e) {
+    const formattedPhone = e.target.value
+      .replace(/\D/g, "")
+      .replace(/^(\d{2})(\d)/g, "($1) $2")
+      .replace(/(\d)(\d{4})$/, "$1-$2");
+
+    setForm({ ...form, phone: formattedPhone });
+  }
+
+  /**
+   * @param {import("react").ChangeEvent<HTMLInputElement>} e
+   */
+  function handleInstagramChange(e) {
+    setForm({ ...form, instagram: e.target.value });
+  }
+
+  /**
+   * @param {import("react").ChangeEvent<HTMLInputElement>} e
+   */
+  function handleAddressChange(e) {
+    setForm({ ...form, address: e.target.value });
   }
 
   async function handleSave() {
     setSaving(true);
     if (settings) {
-      await base44.entities.Settings.update(settings.id, form);
+      await cline.entities.Settings.update(String(settings.id), form);
     } else {
-      const s = await base44.entities.Settings.create(form);
-      setSettings(s);
+      const s = await cline.entities.Settings.create(form);
+      setSettings(/** @type {StoreSettings} */ (s));
     }
     setSaving(false);
   }
@@ -89,21 +141,26 @@ export default function Settings() {
 
         <div>
           <Label>Nome da Loja *</Label>
-          <Input className="mt-1" value={form.store_name} onChange={e => setForm({ ...form, store_name: e.target.value })} placeholder="Ex: Boutique Ella" />
+          <Input className="mt-1" value={form.store_name} onChange={handleStoreNameChange} placeholder="Ex: Boutique Ella" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>Telefone</Label>
-            <Input className="mt-1" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="(11) 99999-9999" />
+            <Input
+              className="mt-1"
+              value={form.phone}
+              onChange={handlePhoneChange}
+              placeholder="(11) 99999-9999"
+            />
           </div>
           <div>
             <Label>Instagram</Label>
-            <Input className="mt-1" value={form.instagram} onChange={e => setForm({ ...form, instagram: e.target.value })} placeholder="@sujaloja" />
+            <Input className="mt-1" value={form.instagram} onChange={handleInstagramChange} placeholder="@sujaloja" />
           </div>
         </div>
         <div>
           <Label>Endereço</Label>
-          <Input className="mt-1" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Rua, número - Cidade/UF" />
+          <Input className="mt-1" value={form.address} onChange={handleAddressChange} placeholder="Rua, número - Cidade/UF" />
         </div>
 
         <Button onClick={handleSave} className="w-full gap-2" disabled={saving}>

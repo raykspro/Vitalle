@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Loader2, Palette, Sun, Moon, Check, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import jsPDF from "jspdf";
 
 // All RGB values as [r,g,b] — NO opacity tricks to avoid jsPDF state leaks
@@ -108,7 +108,7 @@ export default function CatalogExport({ stockItems, products }) {
   const [settings, setSettings] = useState(null);
 
   useEffect(() => {
-    base44.entities.Settings.list().then(data => { if (data.length > 0) setSettings(data[0]); });
+    cline.entities.Settings.list().then(data => { if (data.length > 0) setSettings(data[0]); });
   }, [open]);
 
   async function exportCatalog() {

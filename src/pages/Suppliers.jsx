@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Plus, Search, Truck, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ export default function Suppliers() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const data = await base44.entities.Supplier.list("-created_date", 200);
+    const data = await cline.entities.Supplier.list("-created_date", 200);
     setSuppliers(data);
     setLoading(false);
   }
@@ -43,9 +43,9 @@ export default function Suppliers() {
 
   async function handleSave() {
     if (editing) {
-      await base44.entities.Supplier.update(editing.id, form);
+      await cline.entities.Supplier.update(editing.id, form);
     } else {
-      await base44.entities.Supplier.create(form);
+      await cline.entities.Supplier.create(form);
     }
     setDialogOpen(false);
     loadData();
@@ -53,7 +53,7 @@ export default function Suppliers() {
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este fornecedor?")) return;
-    await base44.entities.Supplier.delete(id);
+    await cline.entities.Supplier.delete(id);
     loadData();
   }
 

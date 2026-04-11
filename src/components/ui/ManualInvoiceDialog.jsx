@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,7 +113,7 @@ export default function ManualInvoiceDialog({ open, onOpenChange, suppliers, pro
   async function handleCreateSupplier() {
     if (!newSupplierName.trim()) return;
     setCreatingSupplier(true);
-    const s = await base44.entities.Supplier.create({ name: newSupplierName.trim() });
+    const s = await cline.entities.Supplier.create({ name: newSupplierName.trim() });
     setLocalSuppliers(prev => [...prev, s]);
     setForm(prev => ({ ...prev, supplier_id: s.id }));
     setNewSupplierName(""); setShowNewSupplier(false); setCreatingSupplier(false);
@@ -197,7 +197,7 @@ export default function ManualInvoiceDialog({ open, onOpenChange, suppliers, pro
 
     for (const entry of stockEntries) {
       if (entry.isNew) {
-        const p = await base44.entities.Product.create({
+        const p = await cline.entities.Product.create({
           name: entry.newProductData.name,
           cost_price: Number(entry.newProductData.cost_price) || 0,
           sell_price: Number(entry.newProductData.sell_price) || 0,
@@ -218,8 +218,8 @@ export default function ManualInvoiceDialog({ open, onOpenChange, suppliers, pro
       const product_name = entry.isNew ? entry.newProductData.name : entry.product_name;
       for (const dist of (entry.distributions || [])) {
         if (!dist.color || !dist.quantity) continue;
-        await base44.entities.StockItem.create({ product_id, product_name, size: dist.size, color: dist.color, quantity: Number(dist.quantity) || 0 });
-        await base44.entities.StockMovement.create({ type: "Entrada", product_id, product_name, size: dist.size, color: dist.color, quantity: Number(dist.quantity) || 0, reference_type: "Nota Fiscal", movement_date: new Date().toISOString() });
+        await cline.entities.StockItem.create({ product_id, product_name, size: dist.size, color: dist.color, quantity: Number(dist.quantity) || 0 });
+        await cline.entities.StockMovement.create({ type: "Entrada", product_id, product_name, size: dist.size, color: dist.color, quantity: Number(dist.quantity) || 0, reference_type: "Nota Fiscal", movement_date: new Date().toISOString() });
       }
     }
 
@@ -230,7 +230,7 @@ export default function ManualInvoiceDialog({ open, onOpenChange, suppliers, pro
     const isCredit = creditMethods.includes(paymentMethod);
     const invoiceStatus = allPaid || (!isCredit) ? "Paga" : "Pendente";
 
-    await base44.entities.Invoice.create({
+    await cline.entities.Invoice.create({
       number: form.number,
       supplier_id: form.supplier_id,
       supplier_name: supplier?.name || "",
@@ -247,7 +247,7 @@ export default function ManualInvoiceDialog({ open, onOpenChange, suppliers, pro
     if (isCredit) {
       for (const [i, inst] of installments.entries()) {
         if (inst.paid) continue;
-        await base44.entities.Payment.create({
+        await cline.entities.Payment.create({
           type: "A Pagar",
           reference_type: "Nota Fiscal",
           person_name: supplier?.name || "",

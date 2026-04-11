@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Plus, Search, Package, Pencil, Trash2, Camera, Loader2, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ export default function Products() {
   }, []);
 
   async function loadProducts() {
-    const data = await base44.entities.Product.list("-created_date", 200);
+    const data = await cline.entities.Product.list("-created_date", 200);
     setProducts(data);
     setLoading(false);
   }
@@ -35,7 +35,7 @@ export default function Products() {
     if (!files.length) return;
     setUploadingImage(true);
     for (const file of files) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await cline.integrations.Core.UploadFile({ file });
       setForm(prev => ({
         ...prev,
         images: [...(prev.images || []), file_url],
@@ -90,9 +90,9 @@ export default function Products() {
       status: "Ativo",
     };
     if (editing) {
-      await base44.entities.Product.update(editing.id, data);
+      await cline.entities.Product.update(editing.id, data);
     } else {
-      await base44.entities.Product.create(data);
+      await cline.entities.Product.create(data);
     }
     setDialogOpen(false);
     loadProducts();
@@ -100,7 +100,7 @@ export default function Products() {
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este produto?")) return;
-    await base44.entities.Product.delete(id);
+    await cline.entities.Product.delete(id);
     loadProducts();
   }
 

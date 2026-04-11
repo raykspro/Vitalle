@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Plus, Search, FileText, Trash2, Eye, Upload } from "lucide-react";
 import InvoiceImportDialog from "../components/InvoiceImportDialog";
 import ManualInvoiceDialog from "../components/ManualInvoiceDialog";
@@ -32,9 +32,9 @@ export default function Invoices() {
 
   async function loadData() {
     const [inv, sup, prods] = await Promise.all([
-      base44.entities.Invoice.list("-created_date", 200),
-      base44.entities.Supplier.list("-created_date", 200),
-      base44.entities.Product.list("-created_date", 200),
+      cline.entities.Invoice.list("-created_date", 200),
+      cline.entities.Supplier.list("-created_date", 200),
+      cline.entities.Product.list("-created_date", 200),
     ]);
     setInvoices(inv);
     setSuppliers(sup);
@@ -80,11 +80,11 @@ export default function Invoices() {
       notes: form.notes,
     };
 
-    await base44.entities.Invoice.create(invoiceData);
+    await cline.entities.Invoice.create(invoiceData);
 
     // Create payment for supplier
     if (form.due_date) {
-      await base44.entities.Payment.create({
+      await cline.entities.Payment.create({
         type: "A Pagar",
         reference_type: "Nota Fiscal",
         person_name: invoiceData.supplier_name,
@@ -100,7 +100,7 @@ export default function Invoices() {
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir esta nota fiscal?")) return;
-    await base44.entities.Invoice.delete(id);
+    await cline.entities.Invoice.delete(id);
     loadData();
   }
 

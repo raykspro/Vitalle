@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +32,8 @@ export default function InvoiceImportDialog({ open, onOpenChange, suppliers, pro
     if (!file) return;
     setLoading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      const { file_url } = await cline.integrations.Core.UploadFile({ file });
+      const result = await cline.integrations.Core.ExtractDataFromUploadedFile({
         file_url,
         json_schema: {
           type: "object",
@@ -125,7 +125,7 @@ export default function InvoiceImportDialog({ open, onOpenChange, suppliers, pro
       const createdProducts = {};
       for (const entry of stockEntries) {
         if (entry.isNew) {
-          const p = await base44.entities.Product.create({
+          const p = await cline.entities.Product.create({
             name: entry.newProductData.name,
             sell_price: Number(entry.newProductData.sell_price) || 0,
             cost_price: Number(entry.newProductData.cost_price) || 0,
@@ -141,7 +141,7 @@ export default function InvoiceImportDialog({ open, onOpenChange, suppliers, pro
         const product_id = entry.isNew ? createdProducts[entry.newProductData.name] : entry.product_id;
         const product_name = entry.isNew ? entry.newProductData.name : entry.product_name;
         if (!entry.color) continue;
-        await base44.entities.StockItem.create({
+        await cline.entities.StockItem.create({
           product_id,
           product_name,
           size: entry.size,
@@ -152,7 +152,7 @@ export default function InvoiceImportDialog({ open, onOpenChange, suppliers, pro
 
       // 3. Create invoice
       const supplier = suppliers.find(s => s.id === invoiceInfo.supplier_id);
-      await base44.entities.Invoice.create({
+      await cline.entities.Invoice.create({
         number: invoiceInfo.number,
         supplier_id: invoiceInfo.supplier_id,
         supplier_name: supplier?.name || extractedData?.supplier_name || "",
@@ -165,7 +165,7 @@ export default function InvoiceImportDialog({ open, onOpenChange, suppliers, pro
 
       // 4. Create payment if due_date
       if (invoiceInfo.due_date) {
-        await base44.entities.Payment.create({
+        await cline.entities.Payment.create({
           type: "A Pagar",
           reference_type: "Nota Fiscal",
           person_name: supplier?.name || extractedData?.supplier_name || "",

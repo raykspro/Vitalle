@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Plus, Search, Wallet, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ export default function Payments() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const data = await base44.entities.Payment.list("-created_date", 500);
+    const data = await cline.entities.Payment.list("-created_date", 500);
     setPayments(data);
     setLoading(false);
   }
@@ -35,7 +35,7 @@ export default function Payments() {
   }
 
   async function handleSave() {
-    await base44.entities.Payment.create({
+    await cline.entities.Payment.create({
       ...form,
       amount: Number(form.amount) || 0,
       due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
@@ -46,7 +46,7 @@ export default function Payments() {
   }
 
   async function markAsPaid(payment) {
-    await base44.entities.Payment.update(payment.id, {
+    await cline.entities.Payment.update(payment.id, {
       status: "Pago",
       paid_date: new Date().toISOString(),
     });

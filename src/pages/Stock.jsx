@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { cline } from "@/api/clineClient";
 import { Plus, Search, Shirt, Trash2, SlidersHorizontal } from "lucide-react";
 import CatalogExport from "../components/CatalogExport";
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,8 @@ export default function Stock() {
 
   async function loadData() {
     const [items, prods] = await Promise.all([
-      base44.entities.StockItem.list("-created_date", 500),
-      base44.entities.Product.list("-created_date", 200),
+      cline.entities.StockItem.list("-created_date", 500),
+      cline.entities.Product.list("-created_date", 200),
     ]);
     setStockItems(items);
     setProducts(prods);
@@ -43,14 +43,14 @@ export default function Stock() {
 
   async function handleSave() {
     const product = products.find((p) => p.id === form.product_id);
-    await base44.entities.StockItem.create({
+    await cline.entities.StockItem.create({
       product_id: form.product_id,
       product_name: product?.name || "",
       size: form.size,
       color: form.color,
       quantity: Number(form.quantity) || 0,
     });
-    await base44.entities.StockMovement.create({
+    await cline.entities.StockMovement.create({
       type: "Entrada",
       product_id: form.product_id,
       product_name: product?.name || "",
@@ -69,8 +69,8 @@ export default function Stock() {
     if (qty <= 0) return;
     const delta = adjustType === "Entrada" ? qty : -qty;
     const newQty = Math.max(0, (adjustItem.quantity || 0) + delta);
-    await base44.entities.StockItem.update(adjustItem.id, { quantity: newQty });
-    await base44.entities.StockMovement.create({
+    await cline.entities.StockItem.update(adjustItem.id, { quantity: newQty });
+    await cline.entities.StockMovement.create({
         type: adjustType,
         product_id: adjustItem.product_id,
         product_name: adjustItem.product_name,
@@ -87,7 +87,7 @@ export default function Stock() {
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este item do estoque?")) return;
-    await base44.entities.StockItem.delete(id);
+    await cline.entities.StockItem.delete(id);
     loadData();
   }
 
@@ -280,4 +280,4 @@ export default function Stock() {
       </Dialog>
     </div>
   );
-}
+} 
