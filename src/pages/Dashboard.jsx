@@ -1,12 +1,40 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Package, Users, ShoppingCart, Wallet, TrendingUp, AlertTriangle } from "lucide-react";
+import { Package, Users, Wallet, TrendingUp, AlertTriangle } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { Link } from "react-router-dom";
 
+/**
+ * @typedef {object} Sale
+ * @property {string} id
+ * @property {number} final_amount
+ * @property {string} customer_name
+ * @property {string} sale_date
+ * @property {string} created_date
+ * @property {string} status
+ */
+
+/**
+ * @typedef {object} Payment
+ * @property {string} id
+ * @property {number} amount
+ * @property {string} person_name
+ * @property {string} type
+ * @property {string} due_date
+ */
+
+/**
+ * @typedef {object} DashboardStats
+ * @property {number} products
+ * @property {number} customers
+ * @property {Sale[]} sales
+ * @property {Payment[]} payments
+ */
+
 export default function Dashboard() {
-  const [stats, setStats] = useState({ products: 0, customers: 0, sales: [], payments: [] });
+  /** @type {[DashboardStats, import('react').Dispatch<import('react').SetStateAction<DashboardStats>>]} */
+  const [stats, setStats] = useState(/** @type {DashboardStats} */({ products: 0, customers: 0, sales: [], payments: [] }));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
