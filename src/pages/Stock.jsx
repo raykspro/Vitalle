@@ -28,7 +28,7 @@ export default function Stock() {
       if (error.name !== "AbortError") {
         console.error("Erro ao carregar dados do estoque:", error);
       }
-    });
+    }).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
