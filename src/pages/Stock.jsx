@@ -23,15 +23,19 @@ export default function Stock() {
   const [adjustQty, setAdjustQty] = useState(1);
 
   useEffect(() => {
-    loadData().catch((error) => {
-      console.error("Erro ao carregar dados do estoque:", error);
+    const controller = new AbortController();
+    loadData(controller.signal).catch((error) => {
+      if (error.name !== "AbortError") {
+        console.error("Erro ao carregar dados do estoque:", error);
+      }
     });
+    return () => controller.abort();
   }, []);
 
-  async function loadData() {
+  async function loadData(signal) {
     const [items, prods] = await Promise.all([
-      cline.entities.StockItem.list("-created_date", 500),
-      cline.entities.Product.list("-created_date", 200),
+      cline.entities.StockItem.list("-created_date", 500, { signal }),
+      cline.entities.Product.list("-created_date", 200, { signal }),
     ]);
     setStockItems(items);
     setProducts(prods);
