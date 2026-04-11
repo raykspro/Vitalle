@@ -23,11 +23,9 @@ export default function Stock() {
   const [adjustQty, setAdjustQty] = useState(1);
 
   useEffect(() => {
-    try {
-      loadData();
-    } catch (error) {
+    loadData().catch((error) => {
       console.error("Erro ao carregar dados do estoque:", error);
-    }
+    });
   }, []);
 
   async function loadData() {
