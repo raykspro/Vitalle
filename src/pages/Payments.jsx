@@ -21,10 +21,18 @@ export default function Payments() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ type: "", person_name: "", amount: "", due_date: "", payment_method: "", notes: "" });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal).catch((error) => {
+      if (error.name !== "AbortError") {
+        console.error("Erro ao carregar dados dos pagamentos:", error);
+      }
+    }).finally(() => setLoading(false));
+    return () => controller.abort();
+  }, []);
 
-  async function loadData() {
-    const data = await cline.entities.Payment.list("-created_date", 500);
+   async function loadData(signal) {
+     const data = await cline.entities.Payment.list("-created_date", 500, { signal });
     setPayments(data);
     setLoading(false);
   }
