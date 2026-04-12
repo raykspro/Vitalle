@@ -42,9 +42,6 @@ const handleSignIn = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <button onClick={handleSignUp} disabled={loading}>
-        {loading ? "Carregando..." : "Cadastrar"}
-      </button>
       <button onClick={handleSignIn} disabled={loading}>
         {loading ? "Carregando..." : "Entrar"}
       </button>
