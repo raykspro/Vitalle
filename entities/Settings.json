@@ -6,9 +6,9 @@
       "type": "string",
       "title": "Nome da Loja"
     },
-    "logo_url": {
+    "logo_file": {
       "type": "string",
-      "title": "URL da Logo"
+      "title": "Arquivo da Logo"
     },
     "phone": {
       "type": "string",
