@@ -18,16 +18,22 @@ export default function StockHistory() {
   const [typeFilter, setTypeFilter] = useState("Todos");
 
   useEffect(() => {
+    const controller = new AbortController();
     Promise.all([
-      cline.entities.StockMovement.list("-movement_date", 500),
-      cline.entities.Product.list("-created_date", 200),
+      cline.entities.StockMovement.list("-movement_date", 500, { signal: controller.signal }),
+      cline.entities.Product.list("-created_date", 200, { signal: controller.signal }),
     ]).then(([movs, prods]) => {
       setMovements(movs);
       const map = {};
       prods.forEach((p) => { map[p.id] = p; });
       setProducts(map);
       setLoading(false);
+    }).catch((error) => {
+      if (error.name !== "AbortError") {
+        console.error("Erro ao carregar dados do histórico de estoque:", error);
+      }
     });
+    return () => controller.abort();
   }, []);
 
   const filtered = movements.filter((m) => {
