@@ -1,7 +1,4 @@
 import { useState } from "react";
-import { supabase } from "../lib/supabaseClient";
-
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 
