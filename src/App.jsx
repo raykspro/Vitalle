@@ -46,7 +46,11 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Render the main app
+  // Render the main app or redirect to login
+  if (!isAuthenticated) {
+    return <Auth />;
+  }
+
   return (
     <Routes>
       <Route element={<Layout />}>
