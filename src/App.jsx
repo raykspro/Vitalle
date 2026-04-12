@@ -68,17 +68,21 @@ const AuthenticatedApp = () => {
 };
 
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 function App() {
 
   return (
-    <AuthProvider>
+<ErrorBoundary>
+  <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <AuthenticatedApp />
         </Router>
         <Toaster />
       </QueryClientProvider>
-    </AuthProvider>
+  </AuthProvider>
+</ErrorBoundary>
   )
 }
 
