@@ -35,8 +35,13 @@ const AuthenticatedApp = () => {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
       // Redirect to login automatically
+      console.error("Erro de autenticação: Redirecionando para login.");
       navigateToLogin();
-      return null;
+      return (
+        <div className="fixed inset-0 flex items-center justify-center">
+          <p>Redirecionando para login...</p>
+        </div>
+      );
     }
   }
 
