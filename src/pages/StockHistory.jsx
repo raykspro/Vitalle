@@ -20,7 +20,10 @@ export default function StockHistory() {
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      cline.entities.StockMovement.list("-movement_date", 500, { signal: controller.signal }),
+cline.entities.StockMovement.list("-movement_date", 500, { signal: controller.signal }).catch((error) => {
+  console.error("Erro ao carregar movimentos de estoque:", error);
+  setLoading(false);
+}),
       cline.entities.Product.list("-created_date", 200, { signal: controller.signal }),
     ]).then(([movs, prods]) => {
       setMovements(movs);
