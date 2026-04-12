@@ -100,13 +100,19 @@ export default function Settings() {
 
   async function handleSave() {
     setSaving(true);
-    if (settings) {
-      await cline.entities.Settings.update(String(settings.id), form);
-    } else {
-      const s = await cline.entities.Settings.create(form);
-      setSettings(/** @type {StoreSettings} */ (s));
+    try {
+      if (settings) {
+        const updatedSettings = await cline.entities.Settings.update(String(settings.id), form);
+        setSettings(updatedSettings);
+      } else {
+        const newSettings = await cline.entities.Settings.create(form);
+        setSettings(/** @type {StoreSettings} */ (newSettings));
+      }
+    } catch (error) {
+      console.error("Erro ao salvar configurações:", error);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   if (loading) return (
