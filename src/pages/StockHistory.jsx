@@ -41,7 +41,7 @@ export default function StockHistory() {
       m.product_name?.toLowerCase().includes(search.toLowerCase()) ||
       m.color?.toLowerCase().includes(search.toLowerCase()) ||
       m.size?.toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === "Todos" || m.type === typeFilter;
+    const matchType = typeFilter === "Todos" || m.type === typeFilter || m.reference_type === typeFilter;
     return matchSearch && matchType;
   });
 
@@ -73,6 +73,9 @@ export default function StockHistory() {
             <SelectItem value="Todos">Todos</SelectItem>
             <SelectItem value="Entrada">Entradas</SelectItem>
             <SelectItem value="Saída">Saídas</SelectItem>
+            <SelectItem value="Venda">Vendas</SelectItem>
+            <SelectItem value="Nota Fiscal">Notas Fiscais</SelectItem>
+            <SelectItem value="Ajuste Manual">Ajustes Manuais</SelectItem>
           </SelectContent>
         </Select>
       </div>
