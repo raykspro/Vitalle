@@ -25,10 +25,14 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => { loadSettings(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadSettings(controller.signal);
+    return () => controller.abort();
+  }, []);
 
-  async function loadSettings() {
-    const data = await cline.entities.Settings.list();
+  async function loadSettings(signal) {
+    const data = await cline.entities.Settings.list({ signal });
     if (data.length > 0) {
       const loadedSettings = /** @type {StoreSettings} */ (data[0]);
       setSettings(loadedSettings);
