@@ -54,6 +54,7 @@ const AuthenticatedApp = () => {
         <Route path="/pagamentos" element={<Payments />} />
         <Route path="/historico" element={<StockHistory />} />
         <Route path="/configuracoes" element={<Settings />} />
+        <Route path="/auth" element={<Auth />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

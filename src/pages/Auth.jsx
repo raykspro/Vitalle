@@ -7,27 +7,25 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleSignUp = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setMessage(`Erro ao cadastrar: ${error.message}`);
-    } else {
-      setMessage("Cadastro realizado com sucesso! Verifique seu e-mail para confirmar.");
-    }
-    setLoading(false);
-  };
+const users = [
+  { username: "rayan", password: "0101" },
+  { username: "julia", password: "0101" },
+];
 
-  const handleSignIn = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setMessage(`Erro ao entrar: ${error.message}`);
-    } else {
-      setMessage("Login realizado com sucesso!");
-    }
-    setLoading(false);
-  };
+const handleSignIn = () => {
+  setLoading(true);
+  const user = users.find(
+    (u) =>
+      u.username.toLowerCase() === email.toLowerCase() &&
+      u.password === password
+  );
+  if (user) {
+    setMessage("Login realizado com sucesso!");
+  } else {
+    setMessage("Usuário ou senha incorretos.");
+  }
+  setLoading(false);
+};
 
   return (
     <div className="auth-container">
