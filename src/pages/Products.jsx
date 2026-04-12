@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import EmptyState from "../components/EmptyState";
 import { formatCurrency } from "../lib/formatters";
 
-const categories = ["Camisetas", "Calças", "Vestidos", "Saias", "Blusas", "Jaquetas", "Shorts", "Acessórios", "Outros"];
+const categories = ["Baby Doll", "Camisola", "Baby Doll Infantil"];
 
 export default function Products() {
   const [products, setProducts] = useState([]);
