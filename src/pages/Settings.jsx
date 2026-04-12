@@ -27,24 +27,28 @@ export default function Settings() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadSettings(controller.signal);
+    setLoading(true);
+    loadSettings(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
   async function loadSettings(signal) {
-    const data = await cline.entities.Settings.list({ signal });
-    if (data.length > 0) {
-      const loadedSettings = /** @type {StoreSettings} */ (data[0]);
-      setSettings(loadedSettings);
-      setForm({
-        store_name: loadedSettings.store_name || "",
-         logo_file: loadedSettings.logo_file || "",
-        phone: loadedSettings.phone || "",
-        address: loadedSettings.address || "",
-        instagram: loadedSettings.instagram || "",
-      });
+    try {
+      const data = await cline.entities.Settings.list({ signal });
+      if (data.length > 0) {
+        const loadedSettings = /** @type {StoreSettings} */ (data[0]);
+        setSettings(loadedSettings);
+        setForm({
+          store_name: loadedSettings.store_name || "",
+          logo_file: loadedSettings.logo_file || "",
+          phone: loadedSettings.phone || "",
+          address: loadedSettings.address || "",
+          instagram: loadedSettings.instagram || "",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar configurações:", error);
     }
-    setLoading(false);
   }
 
   /**
