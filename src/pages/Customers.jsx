@@ -51,15 +51,19 @@ export default function Customers() {
   }
 
   async function handleSave() {
-    if (editing) {
-const { error } = await supabase.from('customers').update(form).eq('id', editing.id);
-if (error) console.error("Erro ao atualizar cliente:", error);
-    } else {
-const { error } = await supabase.from('customers').insert([form]);
-if (error) console.error("Erro ao inserir cliente:", error);
+    try {
+      if (editing) {
+        const { error } = await supabase.from('customers').update(form).eq('id', editing.id);
+        if (error) throw new Error("Erro ao atualizar cliente: " + error.message);
+      } else {
+        const { error } = await supabase.from('customers').insert([form]);
+        if (error) throw new Error("Erro ao inserir cliente: " + error.message);
+      }
+      setDialogOpen(false);
+      loadData();
+    } catch (error) {
+      console.error(error);
     }
-    setDialogOpen(false);
-    loadData();
   }
 
   async function handleDelete(id) {
