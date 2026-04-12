@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -9,45 +8,50 @@ export default function Auth() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSignIn = async () => {
+  const users = [
+    { username: "rayan", password: "0101" },
+    { username: "julia", password: "0101" },
+  ];
+
+  const handleSignIn = () => {
     setLoading(true);
     setError("");
-    try {
-      const { user, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
+    const user = users.find(
+      (u) =>
+        u.username.toLowerCase() === email.toLowerCase() &&
+        u.password === password
+    );
+    if (user) {
       navigate("/dashboard");
-    } catch (err) {
+    } else {
       setError("Usuário ou senha incorretos.");
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-900 text-white">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg">
-        <h1 className="text-2xl font-bold text-center">Login</h1>
+    <div className="flex min-h-screen items-center justify-center bg-white text-black">
+      <div className="w-full max-w-md p-8 space-y-6 bg-beige rounded-lg shadow-lg">
+        <h1 className="text-4xl font-extrabold text-center text-magenta">Vitalle</h1>
+        <h2 className="text-2xl font-bold text-center text-magenta">Login</h2>
         <input
-          type="email"
-          placeholder="E-mail"
+          type="text"
+          placeholder="Usuário"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-magenta"
         />
         <input
           type="password"
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-magenta"
         />
         <button
           onClick={handleSignIn}
           disabled={loading}
-          className="w-full px-4 py-2 font-bold text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="w-full px-4 py-2 font-bold text-white bg-magenta rounded hover:bg-magenta/90 disabled:opacity-50"
         >
           {loading ? "Carregando..." : "Entrar"}
         </button>
