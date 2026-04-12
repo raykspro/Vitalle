@@ -17,11 +17,15 @@ export default function Customers() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", cpf: "", address: "", city: "", state: "", notes: "" });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
+  }, []);
 
-  async function loadData() {
+  async function loadData(signal) {
       try {
-        const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('customers').select('*', { signal }).order('created_at', { ascending: false });
         if (error) {
           console.error("Erro ao carregar clientes:", error);
         }
