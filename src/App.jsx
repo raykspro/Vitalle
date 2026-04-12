@@ -49,11 +49,14 @@ const AuthenticatedApp = () => {
   // Render the main app or redirect to login
   if (!isAuthenticated) {
     return <Auth>
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold mb-4">Login</h1>
-        <input type="text" placeholder="Usuário" className="border p-2 mb-2 w-64" />
-        <input type="password" placeholder="Senha" className="border p-2 mb-4 w-64" />
-        <button className="bg-blue-500 text-white px-4 py-2 rounded">Entrar</button>
+      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+        <h1 className="text-4xl font-bold mb-6">Bem-vindo</h1>
+        <div className="bg-white text-black p-8 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4">Login</h2>
+          <input type="text" placeholder="Usuário" className="border p-2 mb-4 w-64 rounded" />
+          <input type="password" placeholder="Senha" className="border p-2 mb-4 w-64 rounded" />
+          <button className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded transition">Entrar</button>
+        </div>
       </div>
     </Auth>;
   }
