@@ -22,7 +22,9 @@ export default function Auth() {
         u.password === password
     );
     if (user) {
-      navigate("/dashboard");
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 500);
     } else {
       setError("Usuário ou senha incorretos.");
     }
