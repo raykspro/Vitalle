@@ -20,7 +20,7 @@ import { Camera, Loader2, Save, Store } from "lucide-react";
 
 export default function Settings() {
   const [settings, setSettings] = useState(/** @type {StoreSettings | null} */ (null));
-  const [form, setForm] = useState(/** @type {SettingsForm} */ ({ store_name: "", logo_url: "", phone: "", address: "", instagram: "" }));
+  const [form, setForm] = useState(/** @type {SettingsForm} */ ({ store_name: "", logo_file: "", phone: "", address: "", instagram: "" }));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -34,7 +34,7 @@ export default function Settings() {
       setSettings(loadedSettings);
       setForm({
         store_name: loadedSettings.store_name || "",
-        logo_url: loadedSettings.logo_url || "",
+         logo_file: loadedSettings.logo_file || "",
         phone: loadedSettings.phone || "",
         address: loadedSettings.address || "",
         instagram: loadedSettings.instagram || "",
@@ -52,8 +52,8 @@ export default function Settings() {
 
     const file = files[0];
     setUploading(true);
-    const { file_url } = await cline.integrations.Core.UploadFile({ file });
-    setForm(prev => ({ ...prev, logo_url: file_url }));
+     const { file_url } = await cline.integrations.Core.UploadFile({ file });
+     setForm(prev => ({ ...prev, logo_file: file_url }));
     setUploading(false);
   }
 
@@ -125,8 +125,8 @@ export default function Settings() {
           <Label>Logo da Loja</Label>
           <div className="flex items-center gap-4 mt-2">
             <div className="h-20 w-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
-              {form.logo_url
-                ? <img src={form.logo_url} alt="Logo" className="h-full w-full object-cover rounded-xl" />
+               {form.logo_file
+                 ? <img src={form.logo_file} alt="Logo" className="h-full w-full object-cover rounded-xl" />
                 : <Store className="h-8 w-8 text-muted-foreground" />
               }
             </div>
