@@ -19,7 +19,7 @@ import StockHistory from './pages/StockHistory';
 import Settings from './pages/Settings';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -48,7 +48,14 @@ const AuthenticatedApp = () => {
 
   // Render the main app or redirect to login
   if (!isAuthenticated) {
-    return <Auth />;
+    return <Auth>
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold mb-4">Login</h1>
+        <input type="text" placeholder="Usuário" className="border p-2 mb-2 w-64" />
+        <input type="password" placeholder="Senha" className="border p-2 mb-4 w-64" />
+        <button className="bg-blue-500 text-white px-4 py-2 rounded">Entrar</button>
+      </div>
+    </Auth>;
   }
 
   return (
