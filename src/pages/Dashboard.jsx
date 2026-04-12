@@ -39,29 +39,44 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function load() {
-      const [
-        { data: products },
-        { data: customers },
-        { data: sales },
-        { data: payments }
-      ] = await Promise.all([
-        supabase.from('products').select('*'),
-        supabase.from('customers').select('*'),
-        supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(50),
-        supabase.from('payments').select('*').eq('status', 'Pendente').order('due_date', { ascending: false }).limit(50),
-      ]);
+      try {
+        const [
+          { data: products },
+          { data: customers },
+          { data: sales },
+          { data: payments }
+        ] = await Promise.all([
+          supabase.from('products').select('*').catch((error) => {
+            console.error("Erro ao carregar produtos:", error);
+            return { data: [] };
+          }),
+          supabase.from('customers').select('*').catch((error) => {
+            console.error("Erro ao carregar clientes:", error);
+            return { data: [] };
+          }),
+          supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(50).catch((error) => {
+            console.error("Erro ao carregar vendas:", error);
+            return { data: [] };
+          }),
+          supabase.from('payments').select('*').eq('status', 'Pendente').order('due_date', { ascending: false }).limit(50).catch((error) => {
+            console.error("Erro ao carregar pagamentos:", error);
+            return { data: [] };
+          }),
+        ]);
 
-      setStats({ 
-        products: products?.length || 0, 
-        customers: customers?.length || 0, 
-        sales: sales || [], 
-        payments: payments || [] 
-      });
-      setLoading(false);
+        setStats({ 
+          products: products?.length || 0, 
+          customers: customers?.length || 0, 
+          sales: sales || [], 
+          payments: payments || [] 
+        });
+      } catch (error) {
+        console.error("Erro ao carregar dados do dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-    load().catch((error) => {
-      console.error("Erro ao carregar dados do dashboard:", error);
-    });
+    load();
   }, []);
 
   if (loading) {

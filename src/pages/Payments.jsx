@@ -23,18 +23,22 @@ export default function Payments() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal).catch((error) => {
-      if (error.name !== "AbortError") {
-        console.error("Erro ao carregar dados dos pagamentos:", error);
-      }
-    }).finally(() => setLoading(false));
+    loadData(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
-   async function loadData(signal) {
-     const data = await cline.entities.Payment.list("-created_date", 500, { signal });
-    setPayments(data);
-    setLoading(false);
+  async function loadData(signal) {
+    try {
+      const data = await cline.entities.Payment.list("-created_date", 500, { signal }).catch((error) => {
+        console.error("Erro ao carregar pagamentos:", error);
+        return [];
+      });
+      setPayments(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar dados dos pagamentos:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -43,22 +47,34 @@ export default function Payments() {
   }
 
   async function handleSave() {
-    await cline.entities.Payment.create({
-      ...form,
-      amount: Number(form.amount) || 0,
-      due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
-      status: "Pendente",
-    });
-    setDialogOpen(false);
-    loadData();
+    try {
+      await cline.entities.Payment.create({
+        ...form,
+        amount: Number(form.amount) || 0,
+        due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
+        status: "Pendente",
+      }).catch((error) => {
+        console.error("Erro ao registrar pagamento:", error);
+      });
+      setDialogOpen(false);
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao registrar pagamento:", error);
+    }
   }
 
   async function markAsPaid(payment) {
-    await cline.entities.Payment.update(payment.id, {
-      status: "Pago",
-      paid_date: new Date().toISOString(),
-    });
-    loadData();
+    try {
+      await cline.entities.Payment.update(payment.id, {
+        status: "Pago",
+        paid_date: new Date().toISOString(),
+      }).catch((error) => {
+        console.error("Erro ao atualizar status do pagamento:", error);
+      });
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao atualizar status do pagamento:", error);
+    }
   }
 
   const filtered = payments.filter((p) => {

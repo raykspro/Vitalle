@@ -19,20 +19,20 @@ export default function Customers() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal);
+    loadData(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
   async function loadData(signal) {
-      try {
-        const { data, error } = await supabase.from('customers').select('*', { signal }).order('created_at', { ascending: false });
-        if (error) {
-          console.error("Erro ao carregar clientes:", error);
-        }
-        setCustomers(data || []);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      const { data } = await supabase.from('customers').select('*').order('created_at', { ascending: false }).catch((error) => {
+        console.error("Erro ao carregar clientes:", error);
+        return [];
+      });
+      setCustomers(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar clientes:", error);
+    }
   }
 
   function openNew() {
@@ -53,24 +53,31 @@ export default function Customers() {
   async function handleSave() {
     try {
       if (editing) {
-        const { error } = await supabase.from('customers').update(form).eq('id', editing.id);
-        if (error) throw new Error("Erro ao atualizar cliente: " + error.message);
+        await supabase.from('customers').update(form).eq('id', editing.id).catch((error) => {
+          console.error("Erro ao atualizar cliente:", error);
+        });
       } else {
-        const { error } = await supabase.from('customers').insert([form]);
-        if (error) throw new Error("Erro ao inserir cliente: " + error.message);
+        await supabase.from('customers').insert([form]).catch((error) => {
+          console.error("Erro ao cadastrar cliente:", error);
+        });
       }
       setDialogOpen(false);
-      loadData();
+      await loadData();
     } catch (error) {
-      console.error(error);
+      console.error("Erro ao salvar cliente:", error);
     }
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este cliente?")) return;
-const { error } = await supabase.from('customers').delete().eq('id', id);
-if (error) console.error("Erro ao excluir cliente:", error);
-    loadData();
+    try {
+      await supabase.from('customers').delete().eq('id', id).catch((error) => {
+        console.error("Erro ao excluir cliente:", error);
+      });
+    } catch (error) {
+      console.error("Erro ao excluir cliente:", error);
+    }
+    await loadData();
   }
 
   const filtered = customers.filter((c) =>
@@ -156,6 +163,7 @@ if (error) console.error("Erro ao excluir cliente:", error);
                 <Label>Telefone</Label>
                 <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(00) 00000-0000" />
               </div>
+              
               <div>
                 <Label>CPF</Label>
                 <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} />

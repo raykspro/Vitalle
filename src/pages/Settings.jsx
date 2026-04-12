@@ -34,8 +34,11 @@ export default function Settings() {
 
   async function loadSettings(signal) {
     try {
-      const data = await cline.entities.Settings.list({ signal });
-      if (data.length > 0) {
+      const data = await cline.entities.Settings.list({ signal }).catch((error) => {
+        console.error("Erro ao carregar configurações:", error);
+        return [];
+      });
+      if (data?.length > 0) {
         const loadedSettings = /** @type {StoreSettings} */ (data[0]);
         setSettings(loadedSettings);
         setForm({
@@ -60,9 +63,17 @@ export default function Settings() {
 
     const file = files[0];
     setUploading(true);
-     const { file_url } = await cline.integrations.Core.UploadFile({ file });
-     setForm(prev => ({ ...prev, logo_file: file_url }));
-    setUploading(false);
+    try {
+      const { file_url } = await cline.integrations.Core.UploadFile({ file }).catch((error) => {
+        console.error("Erro ao fazer upload do logo:", error);
+        return {};
+      });
+      setForm(prev => ({ ...prev, logo_file: file_url || "" }));
+    } catch (error) {
+      console.error("Erro ao fazer upload do logo:", error);
+    } finally {
+      setUploading(false);
+    }
   }
 
   /**
@@ -102,11 +113,17 @@ export default function Settings() {
     setSaving(true);
     try {
       if (settings) {
-        const updatedSettings = await cline.entities.Settings.update(String(settings.id), form);
-        setSettings(updatedSettings);
+        const updatedSettings = await cline.entities.Settings.update(String(settings.id), form).catch((error) => {
+          console.error("Erro ao atualizar configurações:", error);
+          return null;
+        });
+        setSettings(updatedSettings || settings);
       } else {
-        const newSettings = await cline.entities.Settings.create(form);
-        setSettings(/** @type {StoreSettings} */ (newSettings));
+        const newSettings = await cline.entities.Settings.create(form).catch((error) => {
+          console.error("Erro ao criar configurações:", error);
+          return null;
+        });
+        setSettings(/** @type {StoreSettings} */ (newSettings || settings));
       }
     } catch (error) {
       console.error("Erro ao salvar configurações:", error);
@@ -139,8 +156,8 @@ export default function Settings() {
           <Label>Logo da Loja</Label>
           <div className="flex items-center gap-4 mt-2">
             <div className="h-20 w-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
-               {form.logo_file
-                 ? <img src={form.logo_file} alt="Logo" className="h-full w-full object-cover rounded-xl" />
+              {form.logo_file
+                ? <img src={form.logo_file} alt="Logo" className="h-full w-full object-cover rounded-xl" />
                 : <Store className="h-8 w-8 text-muted-foreground" />
               }
             </div>

@@ -26,10 +26,13 @@ export default function Products() {
 
   async function loadProducts() {
     try {
-      const data = await cline.entities.Product.list("-created_date", 200);
-      setProducts(data);
+      const data = await cline.entities.Product.list("-created_date", 200).catch((error) => {
+        console.error("Erro ao carregar produtos:", error);
+        return [];
+      });
+      setProducts(data || []);
     } catch (error) {
-      // Removido log de erro para evitar mensagens desnecessárias
+      console.error("Erro ao carregar produtos:", error);
     } finally {
       setLoading(false);
     }
@@ -40,12 +43,19 @@ export default function Products() {
     if (!files.length) return;
     setUploadingImage(true);
     for (const file of files) {
-      const { file_url } = await cline.integrations.Core.UploadFile({ file });
-      setForm(prev => ({
-        ...prev,
-        images: [...(prev.images || []), file_url],
-        image_url: prev.image_url || file_url,
-      }));
+      try {
+        const { file_url } = await cline.integrations.Core.UploadFile({ file }).catch((error) => {
+          console.error("Erro ao fazer upload da imagem:", error);
+          return {};
+        });
+        setForm(prev => ({
+          ...prev,
+          images: [...(prev.images || []), file_url || ""],
+          image_url: prev.image_url || file_url || "",
+        }));
+      } catch (error) {
+        console.error("Erro ao fazer upload da imagem:", error);
+      }
     }
     setUploadingImage(false);
   }
@@ -94,19 +104,33 @@ export default function Products() {
       image_url: form.image_url || "",
       status: "Ativo",
     };
-    if (editing) {
-      await cline.entities.Product.update(editing.id, data);
-    } else {
-      await cline.entities.Product.create(data);
+    try {
+      if (editing) {
+        await cline.entities.Product.update(editing.id, data).catch((error) => {
+          console.error("Erro ao atualizar produto:", error);
+        });
+      } else {
+        await cline.entities.Product.create(data).catch((error) => {
+          console.error("Erro ao criar produto:", error);
+        });
+      }
+      setDialogOpen(false);
+      await loadProducts();
+    } catch (error) {
+      console.error("Erro ao salvar produto:", error);
     }
-    setDialogOpen(false);
-    loadProducts();
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este produto?")) return;
-    await cline.entities.Product.delete(id);
-    loadProducts();
+    try {
+      await cline.entities.Product.delete(id).catch((error) => {
+        console.error("Erro ao excluir produto:", error);
+      });
+      await loadProducts();
+    } catch (error) {
+      console.error("Erro ao excluir produto:", error);
+    }
   }
 
   const filtered = products.filter((p) =>

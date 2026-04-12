@@ -24,22 +24,29 @@ export default function Stock() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal).catch((error) => {
-      if (error.name !== "AbortError") {
-        console.error("Erro ao carregar dados do estoque:", error);
-      }
-    }).finally(() => setLoading(false));
+    loadData(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
   async function loadData(signal) {
-    const [items, prods] = await Promise.all([
-      cline.entities.StockItem.list("-created_date", 500, { signal }),
-      cline.entities.Product.list("-created_date", 200, { signal }),
-    ]);
-    setStockItems(items);
-    setProducts(prods);
-    setLoading(false);
+    try {
+      const [items, prods] = await Promise.all([
+        cline.entities.StockItem.list("-created_date", 500, { signal }).catch((error) => {
+          console.error("Erro ao carregar itens do estoque:", error);
+          return [];
+        }),
+        cline.entities.Product.list("-created_date", 200, { signal }).catch((error) => {
+          console.error("Erro ao carregar produtos:", error);
+          return [];
+        }),
+      ]);
+      setStockItems(items || []);
+      setProducts(prods || []);
+    } catch (error) {
+      console.error("Erro ao carregar dados do estoque:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -49,25 +56,33 @@ export default function Stock() {
 
   async function handleSave() {
     const product = products.find((p) => p.id === form.product_id);
-    await cline.entities.StockItem.create({
-      product_id: form.product_id,
-      product_name: product?.name || "",
-      size: form.size,
-      color: form.color,
-      quantity: Number(form.quantity) || 0,
-    });
-    await cline.entities.StockMovement.create({
-      type: "Entrada",
-      product_id: form.product_id,
-      product_name: product?.name || "",
-      size: form.size,
-      color: form.color,
-      quantity: Number(form.quantity) || 0,
-      reference_type: "Ajuste Manual",
-      movement_date: new Date().toISOString(),
-    });
-    setDialogOpen(false);
-    loadData();
+    try {
+      await cline.entities.StockItem.create({
+        product_id: form.product_id,
+        product_name: product?.name || "",
+        size: form.size,
+        color: form.color,
+        quantity: Number(form.quantity) || 0,
+      }).catch((error) => {
+        console.error("Erro ao criar item no estoque:", error);
+      });
+      await cline.entities.StockMovement.create({
+        type: "Entrada",
+        product_id: form.product_id,
+        product_name: product?.name || "",
+        size: form.size,
+        color: form.color,
+        quantity: Number(form.quantity) || 0,
+        reference_type: "Ajuste Manual",
+        movement_date: new Date().toISOString(),
+      }).catch((error) => {
+        console.error("Erro ao registrar movimento de entrada:", error);
+      });
+      setDialogOpen(false);
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao salvar item no estoque:", error);
+    }
   }
 
   async function handleAdjust() {
@@ -75,8 +90,11 @@ export default function Stock() {
     if (qty <= 0) return;
     const delta = adjustType === "Entrada" ? qty : -qty;
     const newQty = Math.max(0, (adjustItem.quantity || 0) + delta);
-    await cline.entities.StockItem.update(adjustItem.id, { quantity: newQty });
-    await cline.entities.StockMovement.create({
+    try {
+      await cline.entities.StockItem.update(adjustItem.id, { quantity: newQty }).catch((error) => {
+        console.error("Erro ao atualizar quantidade no estoque:", error);
+      });
+      await cline.entities.StockMovement.create({
         type: adjustType,
         product_id: adjustItem.product_id,
         product_name: adjustItem.product_name,
@@ -85,16 +103,27 @@ export default function Stock() {
         quantity: qty,
         reference_type: "Ajuste Manual",
         movement_date: new Date().toISOString(),
-    });
-    setAdjustItem(null);
-    setAdjustQty(1);
-    loadData();
+      }).catch((error) => {
+        console.error("Erro ao registrar movimento de ajuste:", error);
+      });
+      setAdjustItem(null);
+      setAdjustQty(1);
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao ajustar item no estoque:", error);
+    }
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este item do estoque?")) return;
-    await cline.entities.StockItem.delete(id);
-    loadData();
+    try {
+      await cline.entities.StockItem.delete(id).catch((error) => {
+        console.error("Erro ao excluir item do estoque:", error);
+      });
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao excluir item no estoque:", error);
+    }
   }
 
   const filtered = stockItems.filter((s) =>
@@ -286,4 +315,4 @@ export default function Stock() {
       </Dialog>
     </div>
   );
-} 
+}

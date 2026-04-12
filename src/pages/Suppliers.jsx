@@ -19,18 +19,22 @@ export default function Suppliers() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal).catch((error) => {
-      if (error.name !== "AbortError") {
-        console.error("Erro ao carregar dados dos fornecedores:", error);
-      }
-    }).finally(() => setLoading(false));
+    loadData(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
-   async function loadData(signal) {
-     const data = await cline.entities.Supplier.list("-created_date", 200, { signal });
-    setSuppliers(data);
-    setLoading(false);
+  async function loadData(signal) {
+    try {
+      const data = await cline.entities.Supplier.list("-created_date", 200, { signal }).catch((error) => {
+        console.error("Erro ao carregar fornecedores:", error);
+        return [];
+      });
+      setSuppliers(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar dados dos fornecedores:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -50,19 +54,33 @@ export default function Suppliers() {
   }
 
   async function handleSave() {
-    if (editing) {
-      await cline.entities.Supplier.update(editing.id, form);
-    } else {
-      await cline.entities.Supplier.create(form);
+    try {
+      if (editing) {
+        await cline.entities.Supplier.update(editing.id, form).catch((error) => {
+          console.error("Erro ao atualizar fornecedor:", error);
+        });
+      } else {
+        await cline.entities.Supplier.create(form).catch((error) => {
+          console.error("Erro ao criar fornecedor:", error);
+        });
+      }
+      setDialogOpen(false);
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao salvar fornecedor:", error);
     }
-    setDialogOpen(false);
-    loadData();
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este fornecedor?")) return;
-    await cline.entities.Supplier.delete(id);
-    loadData();
+    try {
+      await cline.entities.Supplier.delete(id).catch((error) => {
+        console.error("Erro ao excluir fornecedor:", error);
+      });
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao excluir fornecedor:", error);
+    }
   }
 
   const filtered = suppliers.filter((s) =>

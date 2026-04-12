@@ -30,24 +30,34 @@ export default function Invoices() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal).catch((error) => {
-      if (error.name !== "AbortError") {
-        console.error("Erro ao carregar dados das notas fiscais:", error);
-      }
-    }).finally(() => setLoading(false));
+    loadData(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
-   async function loadData(signal) {
-     const [inv, sup, prods] = await Promise.all([
-       cline.entities.Invoice.list("-created_date", 200, { signal }),
-       cline.entities.Supplier.list("-created_date", 200, { signal }),
-       cline.entities.Product.list("-created_date", 200, { signal }),
-     ]);
-    setInvoices(inv);
-    setSuppliers(sup);
-    setProducts(prods);
-    setLoading(false);
+  async function loadData(signal) {
+    try {
+      const [inv, sup, prods] = await Promise.all([
+        cline.entities.Invoice.list("-created_date", 200, { signal }).catch((error) => {
+          console.error("Erro ao carregar notas fiscais:", error);
+          return [];
+        }),
+        cline.entities.Supplier.list("-created_date", 200, { signal }).catch((error) => {
+          console.error("Erro ao carregar fornecedores:", error);
+          return [];
+        }),
+        cline.entities.Product.list("-created_date", 200, { signal }).catch((error) => {
+          console.error("Erro ao carregar produtos:", error);
+          return [];
+        }),
+      ]);
+      setInvoices(inv || []);
+      setSuppliers(sup || []);
+      setProducts(prods || []);
+    } catch (error) {
+      console.error("Erro ao carregar dados das notas fiscais:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -72,44 +82,58 @@ export default function Invoices() {
   }
 
   async function handleSave() {
-    const totalFromItems = form.items.reduce((s, i) => s + i.total, 0);
-    const totalAmount = Number(form.total_amount) || totalFromItems;
+    try {
+      const totalFromItems = form.items.reduce((s, i) => s + i.total, 0);
+      const totalAmount = Number(form.total_amount) || totalFromItems;
 
-    const supplier = suppliers.find((s) => s.id === form.supplier_id);
-    const invoiceData = {
-      number: form.number,
-      supplier_id: form.supplier_id,
-      supplier_name: supplier?.name || form.supplier_name,
-      items: form.items,
-      total_amount: totalAmount,
-      issue_date: form.issue_date ? new Date(form.issue_date).toISOString() : new Date().toISOString(),
-      due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
-      status: "Pendente",
-      notes: form.notes,
-    };
-
-    await cline.entities.Invoice.create(invoiceData);
-
-    // Create payment for supplier
-    if (form.due_date) {
-      await cline.entities.Payment.create({
-        type: "A Pagar",
-        reference_type: "Nota Fiscal",
-        person_name: invoiceData.supplier_name,
-        amount: totalAmount,
-        due_date: invoiceData.due_date,
+      const supplier = suppliers.find((s) => s.id === form.supplier_id);
+      const invoiceData = {
+        number: form.number,
+        supplier_id: form.supplier_id,
+        supplier_name: supplier?.name || form.supplier_name,
+        items: form.items,
+        total_amount: totalAmount,
+        issue_date: form.issue_date ? new Date(form.issue_date).toISOString() : new Date().toISOString(),
+        due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
         status: "Pendente",
-      });
-    }
+        notes: form.notes,
+      };
 
-    setDialogOpen(false);
-    loadData();
+      await cline.entities.Invoice.create(invoiceData).catch((error) => {
+        console.error("Erro ao criar nota fiscal:", error);
+      });
+
+      // Create payment for supplier
+      if (form.due_date) {
+        await cline.entities.Payment.create({
+          type: "A Pagar",
+          reference_type: "Nota Fiscal",
+          person_name: invoiceData.supplier_name,
+          amount: totalAmount,
+          due_date: invoiceData.due_date,
+          status: "Pendente",
+        }).catch((error) => {
+          console.error("Erro ao criar pagamento:", error);
+        });
+      }
+
+      setDialogOpen(false);
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao salvar nota fiscal:", error);
+    }
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir esta nota fiscal?")) return;
-    await cline.entities.Invoice.delete(id);
-    loadData();
+    try {
+      await cline.entities.Invoice.delete(id).catch((error) => {
+        console.error("Erro ao excluir nota fiscal:", error);
+      });
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao excluir nota fiscal:", error);
+    }
   }
 
   const filtered = invoices.filter((i) =>

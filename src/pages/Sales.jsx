@@ -25,24 +25,34 @@ export default function Sales() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadData(controller.signal).catch((error) => {
-      if (error.name !== "AbortError") {
-        console.error("Erro ao carregar dados das vendas:", error);
-      }
-    }).finally(() => setLoading(false));
+    loadData(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
-   async function loadData(signal) {
-     const [s, c, st] = await Promise.all([
-       cline.entities.Sale.list("-created_date", 200, { signal }),
-       cline.entities.Customer.list("-created_date", 500, { signal }),
-       cline.entities.StockItem.list("-created_date", 500, { signal }),
-     ]);
-    setSales(s);
-    setCustomers(c);
-    setStockItems(st);
-    setLoading(false);
+  async function loadData(signal) {
+    try {
+      const [s, c, st] = await Promise.all([
+        cline.entities.Sale.list("-created_date", 200, { signal }).catch((error) => {
+          console.error("Erro ao carregar vendas:", error);
+          return [];
+        }),
+        cline.entities.Customer.list("-created_date", 500, { signal }).catch((error) => {
+          console.error("Erro ao carregar clientes:", error);
+          return [];
+        }),
+        cline.entities.StockItem.list("-created_date", 500, { signal }).catch((error) => {
+          console.error("Erro ao carregar itens do estoque:", error);
+          return [];
+        }),
+      ]);
+      setSales(s || []);
+      setCustomers(c || []);
+      setStockItems(st || []);
+    } catch (error) {
+      console.error("Erro ao carregar dados das vendas:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openNew() {
@@ -54,7 +64,6 @@ export default function Sales() {
   function addItem() {
     const stock = stockItems.find((s) => s.id === currentItem.stock_item_id);
     if (!stock) return;
-    // We need product sell_price - we'll use stock info
     setForm((prev) => ({
       ...prev,
       items: [...prev.items, {
@@ -63,7 +72,7 @@ export default function Sales() {
         size: stock.size,
         color: stock.color,
         quantity: Number(currentItem.quantity),
-        unit_price: 0, // will be set in save
+        unit_price: 0,
         total: 0,
       }],
     }));
@@ -75,81 +84,100 @@ export default function Sales() {
   }
 
   async function handleSave() {
-    // Fetch product prices
-    const products = await cline.entities.Product.list("-created_date", 200);
-    const priceMap = {};
-    products.forEach((p) => { priceMap[p.id] = p.sell_price || 0; });
+    try {
+      const products = await cline.entities.Product.list("-created_date", 200).catch((error) => {
+        console.error("Erro ao carregar produtos:", error);
+        return [];
+      });
+      const priceMap = {};
+      products.forEach((p) => { priceMap[p.id] = p.sell_price || 0; });
 
-    const items = form.items.map((item) => ({
-      ...item,
-      unit_price: priceMap[item.product_id] || 0,
-      total: (priceMap[item.product_id] || 0) * item.quantity,
-    }));
+      const items = form.items.map((item) => ({
+        ...item,
+        unit_price: priceMap[item.product_id] || 0,
+        total: (priceMap[item.product_id] || 0) * item.quantity,
+      }));
 
-    const totalAmount = items.reduce((s, i) => s + i.total, 0);
-    const finalAmount = totalAmount - (Number(form.discount) || 0);
+      const totalAmount = items.reduce((s, i) => s + i.total, 0);
+      const finalAmount = totalAmount - (Number(form.discount) || 0);
 
-    const customer = customers.find((c) => c.id === form.customer_id);
+      const customer = customers.find((c) => c.id === form.customer_id);
 
-    const saleData = {
-      customer_id: form.customer_id,
-      customer_name: customer?.name || form.customer_name || "Cliente Avulso",
-      items,
-      total_amount: totalAmount,
-      discount: Number(form.discount) || 0,
-      final_amount: finalAmount,
-      payment_method: form.payment_method,
-      status: form.payment_method === "Fiado" ? "Pendente" : "Concluída",
-      sale_date: new Date().toISOString(),
-      notes: form.notes,
-    };
+      const saleData = {
+        customer_id: form.customer_id,
+        customer_name: customer?.name || form.customer_name || "Cliente Avulso",
+        items,
+        total_amount: totalAmount,
+        discount: Number(form.discount) || 0,
+        final_amount: finalAmount,
+        payment_method: form.payment_method,
+        status: form.payment_method === "Fiado" ? "Pendente" : "Concluída",
+        sale_date: new Date().toISOString(),
+        notes: form.notes,
+      };
 
-    const created = await cline.entities.Sale.create(saleData);
+      const created = await cline.entities.Sale.create(saleData).catch((error) => {
+        console.error("Erro ao criar venda:", error);
+        throw error;
+      });
 
-    // Update stock and log movements
-    for (const item of form.items) {
-      const stock = stockItems.find((s) =>
-        s.product_id === item.product_id && s.size === item.size && s.color === item.color
-      );
-      if (stock) {
-        await cline.entities.StockItem.update(stock.id, {
-          quantity: Math.max(0, (stock.quantity || 0) - item.quantity),
+      for (const item of form.items) {
+        const stock = stockItems.find((s) =>
+          s.product_id === item.product_id && s.size === item.size && s.color === item.color
+        );
+        if (stock) {
+          await cline.entities.StockItem.update(stock.id, {
+            quantity: Math.max(0, (stock.quantity || 0) - item.quantity),
+          }).catch((error) => {
+            console.error("Erro ao atualizar estoque:", error);
+          });
+        }
+        await cline.entities.StockMovement.create({
+          type: "Saída",
+          product_id: item.product_id,
+          product_name: item.product_name,
+          size: item.size,
+          color: item.color,
+          quantity: item.quantity,
+          reference_type: "Venda",
+          reference_id: created.id,
+          movement_date: new Date().toISOString(),
+        }).catch((error) => {
+          console.error("Erro ao registrar movimento de saída:", error);
         });
       }
-      await cline.entities.StockMovement.create({
-        type: "Saída",
-        product_id: item.product_id,
-        product_name: item.product_name,
-        size: item.size,
-        color: item.color,
-        quantity: item.quantity,
-        reference_type: "Venda",
-        reference_id: created.id,
-        movement_date: new Date().toISOString(),
-      });
-    }
 
-    // Create payment if "Fiado"
-    if (form.payment_method === "Fiado") {
-      await cline.entities.Payment.create({
-        type: "A Receber",
-        reference_type: "Venda",
-        reference_id: created.id,
-        person_name: saleData.customer_name,
-        amount: finalAmount,
-        due_date: new Date(Date.now() + 30 * 86400000).toISOString(),
-        status: "Pendente",
-      });
-    }
+      if (form.payment_method === "Fiado") {
+        await cline.entities.Payment.create({
+          type: "A Receber",
+          reference_type: "Venda",
+          reference_id: created.id,
+          person_name: saleData.customer_name,
+          amount: finalAmount,
+          due_date: new Date(Date.now() + 30 * 86400000).toISOString(),
+          status: "Pendente",
+        }).catch((error) => {
+          console.error("Erro ao criar pagamento:", error);
+        });
+      }
 
-    setDialogOpen(false);
-    loadData();
+      setDialogOpen(false);
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao salvar venda:", error);
+    }
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir esta venda?")) return;
-    await cline.entities.Sale.delete(id);
-    loadData();
+    try {
+      await cline.entities.Sale.delete(id).catch((error) => {
+        console.error("Erro ao excluir venda:", error);
+      });
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao excluir venda:", error);
+    }
   }
 
   const filtered = sales.filter((s) =>
@@ -165,7 +193,7 @@ export default function Sales() {
   }
 
   const itemTotal = form.items.reduce((sum, item) => {
-    return sum; // Will show after price lookup
+    return sum;
   }, 0);
 
   return (

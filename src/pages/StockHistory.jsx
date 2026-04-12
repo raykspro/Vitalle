@@ -20,25 +20,20 @@ export default function StockHistory() {
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-cline.entities.StockMovement.list("-movement_date", 500, { signal: controller.signal }).then((movs) => {
-  setMovements(movs);
-}).catch((error) => {
-  console.error("Erro ao carregar movimentos de estoque:", error);
-}).finally(() => {
-  setLoading(false);
-}),
-      cline.entities.Product.list("-created_date", 200, { signal: controller.signal }),
+      cline.entities.StockMovement.list("-movement_date", 500, { signal: controller.signal }).catch((error) => {
+        console.error("Erro ao carregar movimentos de estoque:", error);
+        return [];
+      }),
+      cline.entities.Product.list("-created_date", 200, { signal: controller.signal }).catch((error) => {
+        console.error("Erro ao carregar produtos:", error);
+        return [];
+      }),
     ]).then(([movs, prods]) => {
-      setMovements(movs);
+      setMovements(movs || []);
       const map = {};
-      prods.forEach((p) => { map[p.id] = p; });
+      (prods || []).forEach((p) => { map[p.id] = p; });
       setProducts(map);
-      setLoading(false);
-    }).catch((error) => {
-      if (error.name !== "AbortError") {
-        console.error("Erro ao carregar dados do histórico de estoque:", error);
-      }
-    });
+    }).finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
 
@@ -47,7 +42,7 @@ cline.entities.StockMovement.list("-movement_date", 500, { signal: controller.si
       m.product_name?.toLowerCase().includes(search.toLowerCase()) ||
       m.color?.toLowerCase().includes(search.toLowerCase()) ||
       m.size?.toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === "Todos" || m.type === typeFilter || m.reference_type === typeFilter;
+    const matchType = typeFilter === "Todos" || m.type === "Entrada" || m.reference_type === typeFilter;
     return matchSearch && matchType;
   });
 
