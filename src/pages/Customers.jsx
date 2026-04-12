@@ -54,15 +54,17 @@ export default function Customers() {
   async function handleSave() {
     try {
       if (editing) {
-        await supabase.from('customers').update(form).eq('id', editing.id).catch((error) => {
-        console.error("Erro ao atualizar cliente:", error);
-        alert("Erro ao atualizar cliente. Verifique os dados e tente novamente.");
-        });
+        const { error } = await supabase.from('customers').update(form).eq('id', editing.id);
+        if (error) {
+          console.error("Erro ao atualizar cliente:", error);
+          alert("Erro ao atualizar cliente. Verifique os dados e tente novamente.");
+        }
       } else {
-        await supabase.from('customers').insert([form]).catch((error) => {
-        console.error("Erro ao cadastrar cliente:", error);
-        alert("Erro ao cadastrar cliente. Verifique os dados e tente novamente.");
-        });
+        const { error } = await supabase.from('customers').insert([form]);
+        if (error) {
+          console.error("Erro ao cadastrar cliente:", error);
+          alert("Erro ao cadastrar cliente. Verifique os dados e tente novamente.");
+        }
       }
       setDialogOpen(false);
       await loadData();
@@ -74,10 +76,11 @@ export default function Customers() {
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este cliente?")) return;
     try {
-      await supabase.from('customers').delete().eq('id', id).catch((error) => {
-        console.error("Erro ao excluir cliente:", error);
-        alert("Erro ao excluir cliente. Tente novamente mais tarde.");
-      });
+       const { error } = await supabase.from('customers').delete().eq('id', id);
+       if (error) {
+         console.error("Erro ao excluir cliente:", error);
+         alert("Erro ao excluir cliente. Tente novamente mais tarde.");
+       }
     } catch (error) {
       console.error("Erro ao excluir cliente:", error);
     }

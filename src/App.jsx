@@ -47,33 +47,9 @@ const AuthenticatedApp = () => {
   }
 
   // Render the main app or redirect to login
-  if (!isAuthenticated) {
-    return <Auth>
-      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-        <h1 className="text-4xl font-bold mb-6">Bem-vindo</h1>
-        <div className="bg-white text-black p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-semibold mb-4">Login</h2>
-          <input type="text" placeholder="Usuário" className="border p-2 mb-4 w-64 rounded" id="username" />
-          <input type="password" placeholder="Senha" className="border p-2 mb-4 w-64 rounded" id="password" />
-          <button 
-            className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded transition"
-            onClick={() => {
-              const username = document.getElementById('username').value;
-              const password = document.getElementById('password').value;
-              if (username === "admin" && password === "admin123") {
-                alert("Login realizado com sucesso!");
-                window.location.href = "/"; // Redireciona para o app
-              } else {
-                alert("Usuário ou senha inválidos!");
-              }
-            }}
-          >
-            Entrar
-          </button>
-        </div>
-      </div>
-    </Auth>;
-  }
+   if (!isAuthenticated) {
+     return <Auth />;
+   }
 
   return (
     <Routes>
