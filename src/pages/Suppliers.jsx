@@ -54,6 +54,11 @@ export default function Suppliers() {
   }
 
   async function handleSave() {
+    if (!form.name || !form.email) {
+      alert("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+    setLoading(true);
     try {
       if (editing) {
         await cline.entities.Supplier.update(editing.id, form).catch((error) => {
@@ -64,22 +69,31 @@ export default function Suppliers() {
           console.error("Erro ao criar fornecedor:", error);
         });
       }
+      alert("Fornecedor salvo com sucesso!");
       setDialogOpen(false);
       await loadData();
     } catch (error) {
       console.error("Erro ao salvar fornecedor:", error);
+      alert("Erro ao salvar fornecedor. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este fornecedor?")) return;
+    setLoading(true);
     try {
       await cline.entities.Supplier.delete(id).catch((error) => {
         console.error("Erro ao excluir fornecedor:", error);
       });
+      alert("Fornecedor excluído com sucesso!");
       await loadData();
     } catch (error) {
       console.error("Erro ao excluir fornecedor:", error);
+      alert("Erro ao excluir fornecedor. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
   }
 
