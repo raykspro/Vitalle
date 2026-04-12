@@ -95,31 +95,41 @@ export default function Products() {
     setDialogOpen(true);
   }
 
-  async function handleSave() {
-    const data = {
-      ...form,
-      cost_price: form.cost_price ? Number(form.cost_price) : 0,
-      sell_price: form.sell_price ? Number(form.sell_price) : 0,
-      images: form.images || [],
-      image_url: form.image_url || "",
-      status: "Ativo",
-    };
-    try {
-      if (editing) {
-        await cline.entities.Product.update(editing.id, data).catch((error) => {
-          console.error("Erro ao atualizar produto:", error);
-        });
-      } else {
-        await cline.entities.Product.create(data).catch((error) => {
-          console.error("Erro ao criar produto:", error);
-        });
-      }
-      setDialogOpen(false);
-      await loadProducts();
-    } catch (error) {
-      console.error("Erro ao salvar produto:", error);
-    }
+async function handleSave() {
+  const data = {
+    ...form,
+    cost_price: form.cost_price ? Number(form.cost_price) : 0,
+    sell_price: form.sell_price ? Number(form.sell_price) : 0,
+    images: form.images || [],
+    image_url: form.image_url || "",
+    status: "Ativo",
+  };
+
+  if (!form.name || !form.sell_price) {
+    alert("Por favor, preencha os campos obrigatórios: Nome e Preço de Venda.");
+    return;
   }
+
+  setLoading(true);
+  try {
+    if (editing) {
+      await cline.entities.Product.update(editing.id, data);
+      console.log("Produto atualizado:", data);
+      alert("Produto atualizado com sucesso!");
+    } else {
+      await cline.entities.Product.create(data);
+      console.log("Produto cadastrado:", data);
+      alert("Produto cadastrado com sucesso!");
+    }
+    setDialogOpen(false);
+    await loadProducts();
+  } catch (error) {
+    console.error("Erro ao salvar produto:", error.response || error.message || error);
+    alert(`Erro ao salvar produto: ${error.response?.data?.message || error.message || "Tente novamente."}`);
+  } finally {
+    setLoading(false);
+  }
+}
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este produto?")) return;

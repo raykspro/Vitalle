@@ -53,49 +53,65 @@ export default function Suppliers() {
     setDialogOpen(true);
   }
 
-  async function handleSave() {
-    if (!form.name || !form.email) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
-      return;
-    }
-    setLoading(true);
-    try {
-      if (editing) {
-        await cline.entities.Supplier.update(editing.id, form).catch((error) => {
-          console.error("Erro ao atualizar fornecedor:", error);
-        });
-      } else {
-        await cline.entities.Supplier.create(form).catch((error) => {
-          console.error("Erro ao criar fornecedor:", error);
-        });
-      }
-      alert("Fornecedor salvo com sucesso!");
-      setDialogOpen(false);
-      await loadData();
-    } catch (error) {
-      console.error("Erro ao salvar fornecedor:", error);
-      alert("Erro ao salvar fornecedor. Tente novamente.");
-    } finally {
-      setLoading(false);
-    }
+async function handleSave() {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const cnpjRegex = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
+  const phoneRegex = /^\(\d{2}\) \d{4,5}-\d{4}$/;
+
+  if (!form.name || !form.email || !form.cnpj || !form.phone) {
+    alert("Por favor, preencha todos os campos obrigatórios.");
+    return;
+  }
+  if (!emailRegex.test(form.email)) {
+    alert("Por favor, insira um e-mail válido.");
+    return;
+  }
+  if (!cnpjRegex.test(form.cnpj)) {
+    alert("Por favor, insira um CNPJ válido.");
+    return;
+  }
+  if (!phoneRegex.test(form.phone)) {
+    alert("Por favor, insira um telefone válido.");
+    return;
   }
 
-  async function handleDelete(id) {
-    if (!confirm("Deseja excluir este fornecedor?")) return;
-    setLoading(true);
-    try {
-      await cline.entities.Supplier.delete(id).catch((error) => {
-        console.error("Erro ao excluir fornecedor:", error);
-      });
-      alert("Fornecedor excluído com sucesso!");
-      await loadData();
-    } catch (error) {
-      console.error("Erro ao excluir fornecedor:", error);
-      alert("Erro ao excluir fornecedor. Tente novamente.");
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    if (editing) {
+      await cline.entities.Supplier.update(editing.id, form);
+      console.log("Fornecedor atualizado:", form);
+      alert("Fornecedor atualizado com sucesso!");
+    } else {
+      await cline.entities.Supplier.create(form);
+      console.log("Fornecedor cadastrado:", form);
+      alert("Fornecedor cadastrado com sucesso!");
     }
+    setDialogOpen(false);
+    await loadData();
+  } catch (error) {
+    console.error("Erro ao salvar fornecedor:", error);
+    alert("Erro ao salvar fornecedor. Tente novamente.");
+  } finally {
+    setLoading(false);
   }
+}
+
+async function handleDelete(id) {
+  const confirmation = window.confirm("Deseja realmente excluir este fornecedor?");
+  if (!confirmation) return;
+  setLoading(true);
+  try {
+    await cline.entities.Supplier.delete(id);
+    console.log("Fornecedor excluído:", id);
+    alert("Fornecedor excluído com sucesso!");
+    await loadData();
+  } catch (error) {
+    console.error("Erro ao excluir fornecedor:", error);
+    alert("Erro ao excluir fornecedor. Tente novamente.");
+  } finally {
+    setLoading(false);
+  }
+}
 
   const filtered = suppliers.filter((s) =>
     s.name?.toLowerCase().includes(search.toLowerCase()) ||
