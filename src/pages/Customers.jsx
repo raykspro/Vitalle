@@ -27,6 +27,7 @@ export default function Customers() {
     try {
       const { data } = await supabase.from('customers').select('*').order('created_at', { ascending: false }).catch((error) => {
         console.error("Erro ao carregar clientes:", error);
+        alert("Erro ao carregar clientes. Tente novamente mais tarde.");
         return [];
       });
       setCustomers(data || []);
@@ -54,11 +55,13 @@ export default function Customers() {
     try {
       if (editing) {
         await supabase.from('customers').update(form).eq('id', editing.id).catch((error) => {
-          console.error("Erro ao atualizar cliente:", error);
+        console.error("Erro ao atualizar cliente:", error);
+        alert("Erro ao atualizar cliente. Verifique os dados e tente novamente.");
         });
       } else {
         await supabase.from('customers').insert([form]).catch((error) => {
-          console.error("Erro ao cadastrar cliente:", error);
+        console.error("Erro ao cadastrar cliente:", error);
+        alert("Erro ao cadastrar cliente. Verifique os dados e tente novamente.");
         });
       }
       setDialogOpen(false);
@@ -73,6 +76,7 @@ export default function Customers() {
     try {
       await supabase.from('customers').delete().eq('id', id).catch((error) => {
         console.error("Erro ao excluir cliente:", error);
+        alert("Erro ao excluir cliente. Tente novamente mais tarde.");
       });
     } catch (error) {
       console.error("Erro ao excluir cliente:", error);
