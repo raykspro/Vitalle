@@ -32,10 +32,8 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-white text-black">
       <div className="w-full max-w-md p-8 space-y-6 bg-beige rounded-lg shadow-lg">
-        <h1 className="text-5xl font-extrabold text-center text-magenta">
-          <span className="bg-gradient-to-r from-magenta to-pink-500 bg-clip-text text-transparent">
-            Vitalle
-          </span>
+        <h1 className="text-5xl font-extrabold text-center text-black">
+          Vitalle
         </h1>
         <h2 className="text-2xl font-bold text-center text-magenta">Login</h2>
         <input
@@ -55,7 +53,7 @@ export default function Auth() {
         <button
           onClick={handleSignIn}
           disabled={loading}
-          className="w-full px-4 py-2 font-bold text-white bg-magenta rounded hover:bg-magenta/90 focus:ring-4 focus:ring-magenta/50 disabled:opacity-50"
+          className="w-full px-4 py-2 font-bold text-magenta bg-white border-2 border-magenta rounded hover:bg-magenta hover:text-white focus:ring-4 focus:ring-magenta/50 disabled:opacity-50"
         >
           {loading ? "Carregando..." : "Entrar"}
         </button>
