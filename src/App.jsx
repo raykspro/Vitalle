@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -19,10 +19,9 @@ import StockHistory from './pages/StockHistory';
 import Settings from './pages/Settings';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, isAuthenticated } = useAuth();
+  const { isLoadingAuth, isAuthenticated } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -30,47 +29,11 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      console.error("Erro de autenticação: Redirecionando para login.");
-      navigateToLogin();
-      return (
-        <div className="fixed inset-0 flex items-center justify-center">
-          <p>Redirecionando para login...</p>
-        </div>
-      );
-    }
-  }
-
-  // Render the main app or redirect to login
-   if (!isAuthenticated) {
-     console.log("Usuário não autenticado, redirecionando para login.");
-     return <Login />;
-   } else {
-     console.log("Usuário autenticado, carregando dashboard.");
-   }
-
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/produtos" element={<Products />} />
-        <Route path="/estoque" element={<Stock />} />
-        <Route path="/clientes" element={<Customers />} />
-        <Route path="/fornecedores" element={<Suppliers />} />
-        <Route path="/vendas" element={<Sales />} />
-        <Route path="/notas-fiscais" element={<Invoices />} />
-        <Route path="/pagamentos" element={<Payments />} />
-        <Route path="/historico" element={<StockHistory />} />
-        <Route path="/configuracoes" element={<Settings />} />
-<Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="*" element={<PageNotFound />} />
-      </Route>
+      <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />} />
+      <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />} />
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
 };

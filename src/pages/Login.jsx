@@ -13,20 +13,25 @@ export default function Login() {
     { username: "julia", password: "0101" },
   ];
 
-  const handleSignIn = () => {
+const handleSignIn = async () => {
     setLoading(true);
     setError("");
-    const user = users.find(
-      (u) =>
-        u.username.toLowerCase() === email.toLowerCase() &&
-        u.password === password
-    );
-    if (user) {
-      navigate("/dashboard", { replace: true });
-    } else {
-      setError("Usuário ou senha incorretos.");
+    try {
+      const user = users.find(
+        (u) =>
+          u.username.toLowerCase() === email.toLowerCase() &&
+          u.password === password
+      );
+      if (user) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError("Usuário ou senha incorretos.");
+      }
+    } catch (error) {
+      console.error("Erro ao fazer login:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
