@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { cline } from "@/api/clineClient";
 import { supabase } from "@/lib/supabaseClient";
 
 const AuthContext = createContext();
@@ -8,27 +7,37 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState(null);
 
-useEffect(() => {
-    checkAppState();
+  useEffect(() => {
+    // 1. Verificar sessão inicial no Supabase
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setUser(session.user);
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
+        setAuthError(error.message);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-       if (session?.user) {
-         console.log("Sessão detectada:", session);
-         setUser(session.user);
-         setIsAuthenticated(true);
-         navigate("/dashboard", { replace: true });
-       } else {
-         console.log("Nenhuma sessão detectada.");
-         setUser(null);
-         setIsAuthenticated(false);
-         navigate("/login", { replace: true });
-       }
+    initAuth();
+
+    // 2. Ouvir mudanças na autenticação (Login/Logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setIsLoadingAuth(false);
     });
 
     return () => {
@@ -36,33 +45,11 @@ useEffect(() => {
     };
   }, []);
 
-  const checkAppState = async () => {
-    setIsLoadingAuth(true);
-    setAuthError(null);
-    setIsLoadingPublicSettings(false);
-    setAppPublicSettings(null);
-
-    try {
-       const currentUser = await cline.auth.me();
-       console.log("Usuário autenticado:", currentUser);
-       setUser(currentUser);
-       setIsAuthenticated(true);
-    } catch {
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoadingAuth(false);
-    }
-  };
-
   const logout = async () => {
-    await cline.auth.logout();
+    await supabase.auth.signOut();
     setUser(null);
     setIsAuthenticated(false);
-  };
-
-  const navigateToLogin = () => {
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   return (
@@ -71,12 +58,8 @@ useEffect(() => {
         user,
         isAuthenticated,
         isLoadingAuth,
-        isLoadingPublicSettings,
         authError,
-        appPublicSettings,
         logout,
-        navigateToLogin,
-        checkAppState,
       }}
     >
       {children}
@@ -86,11 +69,8 @@ useEffect(() => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
-    console.error("Erro: useAuth deve ser usado dentro de um AuthProvider.");
-    return null;
+    throw new Error("useAuth deve ser usado dentro de um AuthProvider.");
   }
-
   return context;
 };
