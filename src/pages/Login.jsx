@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Auth() {
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,14 +23,10 @@ export default function Auth() {
     );
     if (user) {
       navigate("/dashboard", { replace: true });
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
     } else {
       setError("Usuário ou senha incorretos.");
     }
     setLoading(false);
-    console.log("Autenticação concluída, redirecionando...");
   };
 
   return (

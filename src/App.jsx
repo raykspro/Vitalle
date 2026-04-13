@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
-import Auth from './pages/Auth';
+import Login from './pages/Login';
 import Products from './pages/Products';
 import Stock from './pages/Stock';
 import Customers from './pages/Customers';
@@ -67,8 +67,8 @@ const AuthenticatedApp = () => {
         <Route path="/pagamentos" element={<Payments />} />
         <Route path="/historico" element={<StockHistory />} />
         <Route path="/configuracoes" element={<Settings />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/login" element={<Auth />} />
+<Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

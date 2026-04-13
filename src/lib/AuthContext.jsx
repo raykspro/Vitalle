@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
     checkAppState();
 
     const {
@@ -22,10 +22,12 @@ export const AuthProvider = ({ children }) => {
          console.log("Sessão detectada:", session);
          setUser(session.user);
          setIsAuthenticated(true);
+         navigate("/dashboard", { replace: true });
        } else {
          console.log("Nenhuma sessão detectada.");
          setUser(null);
          setIsAuthenticated(false);
+         navigate("/login", { replace: true });
        }
     });
 
