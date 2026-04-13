@@ -49,7 +49,7 @@ const AuthenticatedApp = () => {
   // Render the main app or redirect to login
    if (!isAuthenticated) {
      console.log("Usuário não autenticado, redirecionando para login.");
-     return <Auth />;
+     return <Login />;
    } else {
      console.log("Usuário autenticado, carregando dashboard.");
    }
