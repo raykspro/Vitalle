@@ -18,13 +18,15 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
+       if (session?.user) {
+         console.log("Sessão detectada:", session);
+         setUser(session.user);
+         setIsAuthenticated(true);
+       } else {
+         console.log("Nenhuma sessão detectada.");
+         setUser(null);
+         setIsAuthenticated(false);
+       }
     });
 
     return () => {
@@ -39,9 +41,10 @@ export const AuthProvider = ({ children }) => {
     setAppPublicSettings(null);
 
     try {
-      const currentUser = await cline.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
+       const currentUser = await cline.auth.me();
+       console.log("Usuário autenticado:", currentUser);
+       setUser(currentUser);
+       setIsAuthenticated(true);
     } catch {
       setUser(null);
       setIsAuthenticated(false);
