@@ -24,9 +24,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { useEffect, useState } from 'react';
 import { obterTotalContasAPagar } from './api/finance';
 
+console.log('Verificando Auth...');
 const AuthenticatedApp = () => {
 const { isLoadingAuth, isAuthenticated, user } = useAuth(); // Clerk substitui autenticação
-const userRole = user?.publicMetadata?.role;
+const userRole = user?.publicMetadata?.role || 'vendedor';
 const [totalContasAPagar, setTotalContasAPagar] = useState(0);
 
 useEffect(() => {
@@ -41,7 +42,7 @@ useEffect(() => {
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <p>Carregando Vitalle...</p>
       </div>
     );
   }
