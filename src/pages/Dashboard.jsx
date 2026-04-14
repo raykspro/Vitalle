@@ -15,7 +15,7 @@ export default function Dashboard() {
   const { user } = useUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ products: 0, customers: 0, sales: [], payments: [] });
+  const [data, setData] = useState({ products: 0, customers: 0, sales: [], payments: [], receivablesTotal: 0, payablesTotal: 0 });
 
   const admins = ['rayan', 'julia', 'raykspro']; 
   const isAdmin = admins.includes(user?.username?.toLowerCase());
@@ -28,8 +28,21 @@ export default function Dashboard() {
         const { count: pCount } = await supabase.from('produtos').select('*', { count: 'exact', head: true });
         const { count: cCount } = await supabase.from('clientes').select('*', { count: 'exact', head: true });
         const { data: sData } = await supabase.from('vendas').select('*').order('created_at', { ascending: false }).limit(3);
+        // Buscando somas de contas a receber e a pagar
+        const { data: receivablesData } = await supabase.from('contas_receber').select('valor_total').eq('status', 'pendente');
+        const { data: payablesData } = await supabase.from('contas_pagar').select('valor_total').eq('status', 'pendente');
         
-        setData({ products: pCount || 0, customers: cCount || 0, sales: sData || [], payments: [] });
+        const receivablesTotal = receivablesData?.reduce((sum, item) => sum + item.valor_total, 0) || 0;
+        const payablesTotal = payablesData?.reduce((sum, item) => sum + item.valor_total, 0) || 0;
+        
+        setData({ 
+          products: pCount || 0, 
+          customers: cCount || 0, 
+          sales: sData || [], 
+          payments: [], 
+          receivablesTotal: receivablesTotal, 
+          payablesTotal: payablesTotal 
+        });
       } catch (e) {
         console.error("Erro na sincronização:", e);
       } finally {
@@ -42,14 +55,14 @@ export default function Dashboard() {
   const menuItems = [
     { to: "/", icon: LayoutDashboard, label: "DASHBOARD" },
     { to: "/produtos", icon: Box, label: "PRODUTOS" },
-    { to: "/estoque", icon: Package, label: "ESTOQUE" },
-    { to: "/clientes", icon: Users, label: "CLIENTES" },
-    { to: "/fornecedores", icon: Truck, label: "FORNECEDORES" },
-    { to: "/vendas", icon: ShoppingCart, label: "VENDAS" },
-    { to: "/notas-fiscais", icon: FileText, label: "NOTAS FISCAIS" },
-    { to: "/financeiro", icon: Wallet, label: "FINANCEIRO" },
-    { to: "/historico", icon: History, label: "HISTÓRICO" },
-    { to: "/configuracoes", icon: Settings, label: "CONFIGURAÇÕES" },
+{ to: "/stock", icon: Package, label: "ESTOQUE" },
+{ to: "/customers", icon: Users, label: "CLIENTES" },
+{ to: "/suppliers", icon: Truck, label: "FORNECEDORES" },
+{ to: "/sales", icon: ShoppingCart, label: "VENDAS" },
+{ to: "/invoices", icon: FileText, label: "NOTAS FISCAIS" },
+{ to: "/finance", icon: Wallet, label: "FINANCEIRO" },
+{ to: "/stockhistory", icon: History, label: "HISTÓRICO" },
+{ to: "/settings", icon: Settings, label: "CONFIGURAÇÕES" },
   ];
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#FDFBF7] font-black text-[#d946ef]">INICIALIZANDO VITALLE...</div>;
@@ -59,8 +72,8 @@ export default function Dashboard() {
       
       {/* HEADER MOBILE (3 RISQUINHOS) */}
       <div className="md:hidden bg-white p-5 border-b border-gray-100 flex justify-between items-center sticky top-0 z-50">
-        <h1 className="text-2xl font-black italic tracking-tighter">VITALLE</h1>
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[#d946ef] p-2 bg-[#d946ef]/5 rounded-xl">
+        <h1 className="text-2xl font-black italic tracking-tighter text-uppercase">VITALLE</h1>
+        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[#d946ef] p-2 bg-[#d946ef]/5 rounded-[3rem]">
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
@@ -72,7 +85,7 @@ export default function Dashboard() {
         md:relative md:translate-x-0 md:flex md:flex-col shrink-0
       `}>
         <div className="p-8 hidden md:block">
-          <h1 className="text-3xl font-black italic tracking-tighter">VITALLE</h1>
+          <h1 className="text-3xl font-black italic tracking-tighter text-uppercase">VITALLE</h1>
           <p className="text-[10px] text-[#d946ef] font-bold tracking-[0.3em]">MANAGEMENT</p>
         </div>
         
@@ -112,42 +125,37 @@ export default function Dashboard() {
           {[
             { label: "PRODUTOS", val: data.products, icon: Package },
             { label: "CLIENTES", val: data.customers, icon: Users },
-            { label: "TOTAL VENDAS", val: formatCurrency(0), icon: TrendingUp },
-            { label: "A RECEBER", val: formatCurrency(0), icon: Wallet, highlight: true }
+            { label: "A RECEBER", val: formatCurrency(data.receivablesTotal), icon: Wallet, color: "text-green-600" },
+            { label: "A PAGAR", val: formatCurrency(data.payablesTotal), icon: AlertTriangle, color: "text-red-600" }
           ].map((item, i) => (
             <div key={i} className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm">
               <p className="text-[10px] font-black text-gray-400 tracking-widest mb-2">{item.label}</p>
-              <h3 className={`text-3xl font-black ${item.highlight ? 'text-[#d946ef]' : 'text-black'}`}>{item.val}</h3>
+              <h3 className={`text-3xl font-black ${item.color || 'text-black'}`}>{item.val}</h3>
             </div>
           ))}
         </div>
 
         {/* SEÇÃO DE LISTAS (VENDAS E PAGAMENTOS) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8">
-            <h3 className="font-black text-lg mb-6 tracking-tight">VENDAS RECENTES</h3>
-            <div className="space-y-4">
-              {data.sales.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">Aguardando novas vendas...</p>
-              ) : (
-                data.sales.map((s) => (
-                  <div key={s.id} className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-2xl transition-all">
-                    <span className="text-xs font-bold uppercase">{s.cliente_nome}</span>
-                    <span className="font-black text-[#d946ef]">{formatCurrency(s.total)}</span>
-                  </div>
-                ))
-              )}
+          <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-2xl shadow-[#d946ef]/20">
+            <div className="flex items-center gap-3 mb-6">
+              <Wallet className="text-[#d946ef]" />
+              <h3 className="font-black text-lg text-uppercase">CONTAS A RECEBER</h3>
+            </div>
+            <div className="bg-[#d946ef]/5 p-5 rounded-3xl border border-[#d946ef]/10">
+              <p className="text-[10px] font-bold text-[#d946ef] tracking-widest mb-1">Total pendente</p>
+              <p className="text-3xl font-black text-green-600">{formatCurrency(data.receivablesTotal)}</p>
             </div>
           </div>
 
-          <div className="bg-black rounded-[2.5rem] p-8 text-white shadow-2xl shadow-[#d946ef]/20 flex flex-col justify-between min-h-[250px]">
+          <div className="bg-white rounded-[2.5rem] p-8 text-black shadow-2xl shadow-[#d946ef]/20 flex flex-col justify-between min-h-[250px] border border-gray-100">
             <div className="flex items-center gap-3">
               <AlertTriangle className="text-[#d946ef]" />
-              <h3 className="font-black text-lg">PAGAMENTOS URGENTES</h3>
+              <h3 className="font-black text-lg text-uppercase">PAGAMENTOS URGENTES</h3>
             </div>
-            <div className="bg-white/10 p-5 rounded-3xl border border-white/5 mt-4">
-              <p className="text-[10px] font-bold text-gray-400 tracking-widest mb-1">Total pendente hoje</p>
-              <p className="text-3xl font-black">{formatCurrency(0)}</p>
+            <div className="bg-[#d946ef]/5 p-5 rounded-3xl border border-[#d946ef]/10 mt-4">
+              <p className="text-[10px] font-bold text-[#d946ef] tracking-widest mb-1">Total pendente</p>
+              <p className="text-3xl font-black text-red-600">{formatCurrency(data.payablesTotal)}</p>
             </div>
           </div>
         </div>
