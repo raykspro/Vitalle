@@ -8,9 +8,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { signIn } = useSignIn();
+  const { signIn, setActive, isLoaded } = useSignIn();
 
   const handleSignIn = async () => {
+    if (!isLoaded) return;
+
     setLoading(true);
     setError("");
     try {
@@ -18,48 +20,53 @@ export default function Login() {
         identifier: username,
         password,
       });
+
       if (result.status === "complete") {
+        // ISSO AQUI É O QUE FALTAVA: Ativar a sessão no navegador!
+        await setActive({ session: result.createdSessionId });
         navigate("/dashboard");
       } else {
-        setError("Erro ao autenticar.");
+        setError("O Clerk pede mais passos de verificação. Verifique o painel.");
       }
-    } catch (error) {
+    } catch (err) {
       setError("Usuário ou senha incorretos.");
-      console.error("Erro ao fazer login:", error);
+      console.error("Erro no login:", err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white text-black">
-      <div className="w-full max-w-md p-8 space-y-6 bg-beige rounded-lg shadow-lg">
-        <h1 className="text-5xl font-extrabold text-center text-black">
-          Vitalle
-        </h1>
-        <h2 className="text-2xl font-bold text-center text-magenta">Login</h2>
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="w-full max-w-md p-8 space-y-6 bg-gray-50 rounded-lg shadow-xl border border-gray-100">
+        <h1 className="text-5xl font-extrabold text-center text-black">Vitalle</h1>
+        <h2 className="text-2xl font-bold text-center text-[#d946ef]">Login do Mestre</h2>
+        
         <input
           type="text"
           placeholder="Usuário"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full px-4 py-2 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-magenta"
+          className="w-full px-4 py-3 border rounded focus:ring-2 focus:ring-[#d946ef] outline-none"
         />
+        
         <input
           type="password"
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-magenta"
+          className="w-full px-4 py-3 border rounded focus:ring-2 focus:ring-[#d946ef] outline-none"
         />
+        
         <button
           onClick={handleSignIn}
           disabled={loading}
-          className="w-full px-4 py-2 font-bold text-magenta bg-white border-2 border-magenta rounded hover:bg-magenta hover:text-white focus:ring-4 focus:ring-magenta/50 disabled:opacity-50"
+          className="w-full py-3 font-bold text-white bg-[#d946ef] rounded hover:opacity-90 disabled:opacity-50 transition-all"
         >
-          {loading ? "Carregando..." : "Entrar"}
+          {loading ? "Abrindo as portas..." : "ENTRAR"}
         </button>
-        {error && <p className="text-red-500 text-center">{error}</p>}
+        
+        {error && <p className="text-red-500 text-center font-medium">{error}</p>}
       </div>
     </div>
   );

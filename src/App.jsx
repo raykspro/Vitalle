@@ -1,5 +1,5 @@
-// Vitalle v5.0 - Simplified Routing for Build Success
-import { ClerkProvider, SignIn, SignedIn, SignedOut } from '@clerk/clerk-react';
+// Vitalle v5.1 - Roteamento Blindado
+import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -7,20 +7,26 @@ import Login from './pages/Login';
 const clerkPubKey = "pk_test_ZW5oYW5jZWQtc25ha2UtNDguY2xlcmsuYWNjb3VudHMuZGV2JA";
 
 function App() {
-  console.log('Verificando estrutura do App.jsx');
-
   return (
     <ClerkProvider publishableKey={clerkPubKey}>
       <Router>
         <Routes>
+          {/* Rota de Login: Se já estiver logado, vai direto pro Dashboard */}
           <Route
             path="/"
             element={
-              <SignedOut>
-                <SignIn />
-              </SignedOut>
+              <>
+                <SignedIn>
+                  <Navigate to="/dashboard" replace />
+                </SignedIn>
+                <SignedOut>
+                  <Login />
+                </SignedOut>
+              </>
             }
           />
+
+          {/* Rota do Dashboard: Protegida pelo Clerk */}
           <Route
             path="/dashboard"
             element={
@@ -29,10 +35,9 @@ function App() {
               </SignedIn>
             }
           />
-          <Route
-            path="*"
-            element={<Navigate to="/" replace />}
-          />
+
+          {/* Se o mestre se perder, volta pro início */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </ClerkProvider>
