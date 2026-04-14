@@ -40,7 +40,7 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-white">
       <div className="w-full max-w-md p-8 space-y-6 bg-gray-50 rounded-lg shadow-xl border border-gray-100">
         <h1 className="text-5xl font-extrabold text-center text-black">Vitalle</h1>
-        <h2 className="text-2xl font-bold text-center text-[#d946ef]">Login do Mestre</h2>
+        <h2 className="text-2xl font-bold text-center text-[#d946ef]">Login</h2>
         
         <input
           type="text"
