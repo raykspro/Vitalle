@@ -1,30 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { obterTotalContasAPagar } from '../api/finance';
-import FinanceFilter from '../components/FinanceFilter';
+import React from 'react';
+import { useUser } from '@clerk/clerk-react';
 
 const Finance = () => {
-  const [total, setTotal] = useState(0);
-  const [filter, setFilter] = useState('');
+  const { user } = useUser();
+  const userRole = user?.publicMetadata?.role || 'vendedor';
 
-  useEffect(() => {
-    async function fetchTotal() {
-      const total = await obterTotalContasAPagar(filter);
-      setTotal(total);
-    }
-    fetchTotal();
-  }, [filter]);
+  if (userRole !== 'admin') {
+    return <div>Acesso negado</div>;
+  }
 
-  const handleFilterChange = (selectedFilter) => {
-    setFilter(selectedFilter);
-  };
-
-  return (
-    <div className="finance-page">
-      <h1>Finanças</h1>
-      <FinanceFilter onFilterChange={handleFilterChange} />
-      <h2>Total Contas a Pagar: R$ {total.toFixed(2)}</h2>
-    </div>
-  );
+  return <div>Bem-vindo ao Financeiro</div>;
 };
 
 export default Finance;

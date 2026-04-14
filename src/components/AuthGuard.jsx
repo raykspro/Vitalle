@@ -13,15 +13,14 @@ const AuthGuard = ({ children }) => {
     );
   }
 
-  if (!isSignedIn) {
+if (!isSignedIn) {
     return <Navigate to="/login" replace />;
   }
 
   const userRole = user?.publicMetadata?.role || 'vendedor';
 
-  console.log('[Vitalle] Sessão carregada com sucesso');
 
-  return React.cloneElement(children, { userRole });
+return children;
 };
 
 export default AuthGuard;
