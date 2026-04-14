@@ -1,4 +1,7 @@
 // Vitalle v5.1 - Roteamento Blindado (Fixed White Screen)
+import React, { useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
@@ -16,9 +19,16 @@ import Stock from './pages/Stock';
 import StockHistory from './pages/StockHistory';
 import Suppliers from './pages/Suppliers';
 
-console.log('App montado');
-
 function App() {
+  const { isSignedIn } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isSignedIn) {
+      navigate("/dashboard");
+    }
+  }, [isSignedIn, navigate]);
+
   return (
     <ErrorBoundary>
       <Routes>
@@ -46,4 +56,3 @@ function App() {
 }
 
 export default App;
-
