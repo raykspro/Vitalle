@@ -11,11 +11,9 @@ console.log('Dados do Usuário:', user);
 try {
   return (
     <div>
-      <h1>Bem-vindo ao Dashboard</h1>
-      {userRole === 'admin' && <p>Acesso ao Financeiro liberado.</p>}
-      {userRole !== 'admin' && <p>Você não tem acesso ao Financeiro.</p>}
+      <h1>Carregando Dashboard...</h1>
     </div>
-    );
+  );
   } catch (error) {
     console.error('Erro no Dashboard:', error);
     return <div>Erro ao carregar o Dashboard.</div>;
