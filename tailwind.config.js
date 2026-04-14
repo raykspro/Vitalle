@@ -1,5 +1,13 @@
-/** @type {import('tailwindcss').Config} */
+
 module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        'boutique-bg': '#FDFBF7',
+        magenta: '#d946ef',
+      }
+    }
+  },
     darkMode: ["class"],
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {

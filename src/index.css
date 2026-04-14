@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,82 +7,55 @@
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;
-    --background: 30 20% 98%;
-    --foreground: 240 10% 10%;
+    --background: 240 33% 98%;
+    --foreground: 0 0% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card-foreground: 0 0% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
-    --primary: 262 60% 50%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 325 89% 65%; /* O Magenta Vitalle */
     --primary-foreground: 0 0% 100%;
-    --secondary: 262 20% 95%;
-    --secondary-foreground: 262 40% 30%;
+    --secondary: 325 20% 95%;
+    --secondary-foreground: 325 40% 30%;
     --muted: 240 5% 94%;
     --muted-foreground: 240 5% 45%;
-    --accent: 340 65% 55%;
+    --accent: 325 89% 65%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 262 60% 50%;
-    --chart-1: 262 60% 50%;
-    --chart-2: 340 65% 55%;
-    --chart-3: 170 55% 42%;
-    --chart-4: 40 80% 58%;
-    --chart-5: 200 65% 50%;
-    --radius: 0.75rem;
-    --sidebar-background: 262 45% 16%;
-    --sidebar-foreground: 262 10% 90%;
-    --sidebar-primary: 262 60% 60%;
+    --ring: 325 89% 65%;
+    --radius: 3rem; /* Bordas arredondadas Boutique */
+    
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 325 89% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 262 30% 22%;
-    --sidebar-accent-foreground: 262 10% 90%;
-    --sidebar-border: 262 25% 24%;
-    --sidebar-ring: 262 60% 50%;
+    --sidebar-border: 240 6% 90%;
   }
 
-  .dark {
-    --background: 240 10% 6%;
-    --foreground: 0 0% 95%;
-    --card: 240 10% 9%;
-    --card-foreground: 0 0% 95%;
-    --popover: 240 10% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 262 60% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 262 20% 18%;
-    --secondary-foreground: 262 20% 80%;
-    --muted: 240 5% 15%;
-    --muted-foreground: 240 5% 55%;
-    --accent: 340 65% 55%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 18%;
-    --input: 240 5% 18%;
-    --ring: 262 60% 55%;
-    --chart-1: 262 60% 55%;
-    --chart-2: 340 65% 55%;
-    --chart-3: 170 55% 42%;
-    --chart-4: 40 80% 58%;
-    --chart-5: 200 65% 50%;
-    --sidebar-background: 262 45% 10%;
-    --sidebar-foreground: 262 10% 90%;
-    --sidebar-primary: 262 60% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 262 30% 16%;
-    --sidebar-accent-foreground: 262 10% 90%;
-    --sidebar-border: 262 25% 18%;
-    --sidebar-ring: 262 60% 55%;
+  * {
+    @apply border-border outline-none;
+  }
+
+  body {
+    @apply bg-[#FDFBF7] text-foreground font-inter uppercase tracking-wider antialiased;
+  }
+
+  /* Padronização de Tipografia Vitalle */
+  h1, h2, h3, h4, h5, h6, p, span, label, button, a {
+    @apply uppercase tracking-widest font-black;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+/* Utilitários Extras para o Dashboard */
+@layer components {
+  .card-vitalle {
+    @apply bg-white border border-gray-100 shadow-sm rounded-[3rem] p-8 transition-all hover:border-[#d946ef]/30;
   }
-  body {
-    @apply bg-background text-foreground font-inter;
+  
+  .btn-magenta {
+    @apply bg-[#d946ef] text-white rounded-2xl font-black px-6 py-3 hover:bg-[#c026d3] transition-all;
   }
 }

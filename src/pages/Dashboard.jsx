@@ -28,12 +28,20 @@ export default function Dashboard() {
         const { count: pCount } = await supabase.from('produtos').select('*', { count: 'exact', head: true });
         const { count: cCount } = await supabase.from('clientes').select('*', { count: 'exact', head: true });
         const { data: sData } = await supabase.from('vendas').select('*').order('created_at', { ascending: false }).limit(3);
-        // Buscando somas de contas a receber e a pagar
-        const { data: receivablesData } = await supabase.from('contas_receber').select('valor_total').eq('status', 'pendente');
-        const { data: payablesData } = await supabase.from('contas_pagar').select('valor_total').eq('status', 'pendente');
+        // Somas boutique: A RECEBER (tipo RECEBER + PENDENTE) e A PAGAR (tipo PAGAR/COMISSAO + PENDENTE)
+        const { data: receivablesData } = await supabase
+          .from('financeiro')
+          .select('valor_total')
+          .eq('status', 'PENDENTE')
+          .eq('type', 'RECEBER');
+        const { data: payablesData } = await supabase
+          .from('financeiro')
+          .select('valor_total')
+          .eq('status', 'PENDENTE')
+          .in('type', ['PAGAR', 'COMISSAO']);
         
-        const receivablesTotal = receivablesData?.reduce((sum, item) => sum + item.valor_total, 0) || 0;
-        const payablesTotal = payablesData?.reduce((sum, item) => sum + item.valor_total, 0) || 0;
+        const receivablesTotal = receivablesData?.reduce((sum, item) => sum + (item.valor_total || 0), 0) || 0;
+        const payablesTotal = payablesData?.reduce((sum, item) => sum + (item.valor_total || 0), 0) || 0;
         
         setData({ 
           products: pCount || 0, 

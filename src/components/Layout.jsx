@@ -3,16 +3,16 @@ import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { to: "/", label: "Dashboard", icon: Home },
-  { to: "/produtos", label: "Produtos", icon: Package },
-  { to: "/estoque", label: "Estoque", icon: Shirt },
-  { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/fornecedores", label: "Fornecedores", icon: Truck },
-  { to: "/vendas", label: "Vendas", icon: ShoppingCart },
-  { to: "/notas-fiscais", label: "Notas Fiscais", icon: FileText },
-  { to: "/pagamentos", label: "Pagamentos", icon: Wallet },
-  { to: "/historico", label: "Histórico", icon: History },
-  { to: "/configuracoes", label: "Configurações", icon: Settings },
+  { to: "/dashboard", label: "DASHBOARD", icon: Home },
+  { to: "/products", label: "PRODUTOS", icon: Package },
+  { to: "/stock", label: "ESTOQUE", icon: Shirt },
+  { to: "/customers", label: "CLIENTES", icon: Users },
+  { to: "/suppliers", label: "FORNECEDORES", icon: Truck },
+  { to: "/sales", label: "VENDAS", icon: ShoppingCart },
+  { to: "/invoices", label: "NOTAS FISCAIS", icon: FileText },
+  { to: "/payments", label: "PAGAMENTOS", icon: Wallet },
+  { to: "/stockhistory", label: "HISTÓRICO", icon: History },
+  { to: "/settings", label: "CONFIGURAÇÕES", icon: Settings },
 ];
 
 export default function Layout() {
@@ -20,9 +20,9 @@ export default function Layout() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-screen-2xl flex-col lg:flex-row">
         <aside className="border-b border-border bg-card lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">
-          <div className="border-b border-border p-6">
-            <h1 className="text-xl font-semibold">Vitalle</h1>
-            <p className="text-sm text-muted-foreground">Gestão da loja</p>
+  <div className="border-b border-magenta/20 p-6 bg-gradient-to-r from-magenta/5 to-boutique-bg/50">
+            <h1 className="text-2xl font-black text-magenta tracking-widest">VITALLE</h1>
+            <p className="text-xs text-magenta/70 font-bold tracking-[0.3em]">BOUTIQUE MANAGEMENT</p>
           </div>
 
           <nav className="grid gap-1 p-4">
@@ -38,8 +38,8 @@ export default function Layout() {
                     cn(
                       "flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-colors",
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-magenta text-white shadow-magenta/20 shadow-lg"
+                        : "text-gray-600 hover:bg-magenta/10 hover:text-magenta hover:shadow-magenta/10 transition-all duration-200 font-black uppercase tracking-widest text-sm"
                     )
                   }
                 >
