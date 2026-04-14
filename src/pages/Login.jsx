@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSignIn, useUser } from "@clerk/clerk-react";
+import { useAuth, useSignIn } from "@clerk/clerk-react";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -8,14 +8,17 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { signIn, setActive, isLoaded } = useSignIn();
-  const { isSignedIn } = useUser();
+  
+  const { isLoaded, isSignedIn } = useAuth();
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [isSignedIn, isLoaded, navigate]);
+  if (isLoaded && isSignedIn) {
+    navigate("/dashboard", { replace: true });
+    return null;
+  }
+
+  const { signIn, setActive } = useSignIn();
+
+// Redirect handled by initial useAuth check
 
   const handleSignIn = async () => {
     if (!isLoaded || isSignedIn) return;
