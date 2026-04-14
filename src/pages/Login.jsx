@@ -23,7 +23,7 @@ const handleSignIn = async () => {
           u.password === password
       );
       if (user) {
-        navigate("/dashboard", { replace: true });
+window.location.replace('/dashboard');
       } else {
         setError("Usuário ou senha incorretos.");
       }
