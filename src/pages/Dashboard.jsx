@@ -3,11 +3,12 @@ import { useUser } from '@clerk/clerk-react';
 
 const Dashboard = () => {
   const { user } = useUser();
+  const username = user?.username || 'Mestre';
 
-  console.log('RENDERIZANDO DASHBOARD');
+  console.log('USUARIO LOGADO:', username);
 
   return (
-    <h1>Dashboard da Vitalle - Logado como {user.username}</h1>
+    <h1>Bem-vindo à Vitalle, {username}</h1>
   );
 };
 
