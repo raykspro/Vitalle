@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useUser, SignOutButton } from '@clerk/clerk-react';
-import { supabase } from "@/lib/supabase";
+import supabase from "@/lib/supabase";
 import { 
   Package, ShoppingCart, Wallet, LayoutDashboard, Users, 
   TrendingUp, AlertTriangle, LogOut, ShieldCheck, Menu, X,
