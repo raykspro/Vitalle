@@ -1,33 +1,30 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSignIn } from "@clerk/clerk-react";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { signIn } = useSignIn();
 
-  const users = [
-    { username: "rayan", password: "0101" },
-    { username: "julia", password: "0101" },
-  ];
-
-const handleSignIn = async () => {
+  const handleSignIn = async () => {
     setLoading(true);
     setError("");
     try {
-      const user = users.find(
-        (u) =>
-          u.username.toLowerCase() === email.toLowerCase() &&
-          u.password === password
-      );
-      if (user) {
-window.location.replace('/dashboard');
+      const result = await signIn.create({
+        identifier: username,
+        password,
+      });
+      if (result.status === "complete") {
+        navigate("/dashboard");
       } else {
-        setError("Usuário ou senha incorretos.");
+        setError("Erro ao autenticar.");
       }
     } catch (error) {
+      setError("Usuário ou senha incorretos.");
       console.error("Erro ao fazer login:", error);
     } finally {
       setLoading(false);
@@ -44,8 +41,8 @@ window.location.replace('/dashboard');
         <input
           type="text"
           placeholder="Usuário"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           className="w-full px-4 py-2 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-magenta"
         />
         <input
