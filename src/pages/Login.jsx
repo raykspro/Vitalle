@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSignIn } from "@clerk/clerk-react";
+import { useSignIn, useUser } from "@clerk/clerk-react";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -9,9 +9,16 @@ export default function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { signIn, setActive, isLoaded } = useSignIn();
+  const { isSignedIn } = useUser();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isSignedIn, isLoaded, navigate]);
 
   const handleSignIn = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || isSignedIn) return;
 
     setLoading(true);
     setError("");
@@ -22,14 +29,17 @@ export default function Login() {
       });
 
       if (result.status === "complete") {
-        // ISSO AQUI É O QUE FALTAVA: Ativar a sessão no navegador!
         await setActive({ session: result.createdSessionId });
         navigate("/dashboard");
       } else {
         setError("O Clerk pede mais passos de verificação. Verifique o painel.");
       }
     } catch (err) {
-      setError("Usuário ou senha incorretos.");
+      if (err.errors?.[0]?.code === "already_signed_in" || err.message.includes("already")) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        setError("Usuário ou senha incorretos.");
+      }
       console.error("Erro no login:", err);
     } finally {
       setLoading(false);
