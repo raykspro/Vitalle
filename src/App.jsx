@@ -16,7 +16,7 @@ import Stock from './pages/Stock';
 import StockHistory from './pages/StockHistory';
 import Suppliers from './pages/Suppliers';
 
-console.log('VITALLE ONLINE');
+console.log('App montado');
 
 function App() {
   return (
@@ -46,3 +46,4 @@ function App() {
 }
 
 export default App;
+
