@@ -1,21 +1,7 @@
-# RECONSTRUÇÃO PRIORITÁRIA VITALLE - WHITE SCREEN FIX
-Status: ✅ EXECUTANDO
+# Vitalle Route Fixes TODO
 
-## 📋 Steps from Approved Plan
-
-- [x] 1. Rewrite src/main.jsx (FULL RESTORE: BrowserRouter > ClerkProvider > App)
-- [x] 2. Edit src/App.jsx (console.log('App montado'), catch-all to /dashboard)
-
-- [x] 3. Verify public/_redirects (/* /index.html 200) - already done
-- [x] 4. Git add . && commit -m "Emergency fix: Full routing restore and redirect fix" (0ce571d)
-- [x] 5. git push origin blackboxai/white-screen-fix
-
-✅ ALL STEPS COMPLETE - VITALLE ROUTING FIXED!
-
-**Changes:**
-- main.jsx: Full BrowserRouter/ClerkProvider/App restore
-- App.jsx: console.log('App montado'), /dashboard catch-all
-- Git: Pushed to blackboxai/white-screen-fix (0ce571d)
-
-Run: npm run dev
+- [x] Step 1: Update vercel.json with new rewrites config
+- [x] Step 2: Update public/manifest.json start_url to "/"
+- [x] Step 3: Ensure public/_redirects has correct redirect rule
+- [x] Step 4: Git commit and force push changes
 
