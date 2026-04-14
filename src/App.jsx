@@ -1,5 +1,5 @@
-// Vitalle v2.0 - Simplified Routing with Clerk
-import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+// Vitalle v3.0 - Simplified Routing for Debugging
+import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -26,10 +26,6 @@ function App() {
                 <Login />
               </SignedOut>
             }
-          />
-          <Route
-            path="*"
-            element={<RedirectToSignIn />}
           />
         </Routes>
       </Router>

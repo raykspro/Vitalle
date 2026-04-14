@@ -5,7 +5,7 @@ const Dashboard = () => {
   const { user } = useUser();
   const userRole = user?.publicMetadata?.role || 'vendedor';
 
-console.log('ESTOU NO DASHBOARD - USUÁRIO:', user?.id);
+console.log('DEBUG: Dashboard montado - USUÁRIO:', user?.id);
 
 return (
     <div>
