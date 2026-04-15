@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Save, X, Loader2, DollarSign, Percent, UserCheck, Image as ImageIcon, Tag, Hash, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  parsePriceToCents,
+  formatPriceDisplay,
+  percentOfCents,
+  subtractCents
+} from "@/lib/formatters";
 import { supabase } from "../lib/supabaseClient";
 import { toast } from "sonner";
 
@@ -21,24 +27,24 @@ export default function Products() {
     status: "Ativo"
   });
 
-  const [metrics, setMetrics] = useState({ profit: 0, margin: 0, commission_value: 0, net_profit: 0 });
+  const [metrics, setMetrics] = useState({ profit_cents: 0n, margin: 0, commission_value_cents: 0n, net_profit_cents: 0n });
 
   useEffect(() => {
-    const cost = parseFloat(formData.cost_price) || 0;
-    const sell = parseFloat(formData.sell_price) || 0;
+    const costCents = parsePriceToCents(formData.cost_price);
+    const sellCents = parsePriceToCents(formData.sell_price);
     const commPer = parseFloat(formData.commission_percent) || 0;
     
-    if (sell > 0) {
-      const commValue = (sell * commPer) / 100;
-      const bruteProfit = sell - cost;
-      const netProfit = bruteProfit - commValue;
-      const margin = (netProfit / sell) * 100;
+    if (Number(sellCents) > 0) {
+      const commValueCents = percentOfCents(sellCents, formData.commission_percent);
+      const bruteProfitCents = subtractCents(sellCents, costCents);
+      const netProfitCents = subtractCents(bruteProfitCents, commValueCents);
+      const margin = (Number(netProfitCents) / Number(sellCents)) * 100;
 
       setMetrics({ 
-        profit: bruteProfit, 
-        margin: margin, 
-        commission_value: commValue,
-        net_profit: netProfit
+        profit_cents: bruteProfitCents, 
+        margin,
+        commission_value_cents: commValueCents,
+        net_profit_cents: netProfitCents
       });
     }
   }, [formData.cost_price, formData.sell_price, formData.commission_percent]);
@@ -47,12 +53,14 @@ export default function Products() {
     e.preventDefault();
     setLoading(true);
     try {
+      const costCents = parsePriceToCents(formData.cost_price);
+      const sellCents = parsePriceToCents(formData.sell_price);
       const { error } = await supabase.from('products').insert([{
         ...formData,
-        price: parseFloat(formData.sell_price),
-        cost_price: parseFloat(formData.cost_price),
-        commission_value: metrics.commission_value,
-        net_profit: metrics.net_profit
+        sell_price_cents: sellCents.toString(),
+        cost_price_cents: costCents.toString(),
+        commission_value_cents: metrics.commission_value_cents.toString(),
+        net_profit_cents: metrics.net_profit_cents.toString()
       }]);
 
       if (error) throw error;
@@ -179,7 +187,7 @@ export default function Products() {
             
             <div className="space-y-1 relative z-10 border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0">
               <span className="text-[9px] font-black tracking-[0.2em] text-magenta uppercase">Lucro Líquido Real</span>
-              <p className="text-3xl font-black italic text-green-400">R$ {metrics.net_profit.toFixed(2)}</p>
+              <p className="text-3xl font-black italic text-green-400">{formatPriceDisplay(metrics.net_profit_cents)}</p>
             </div>
 
             <div className="space-y-1 relative z-10 border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0 md:px-6">
@@ -191,7 +199,7 @@ export default function Products() {
 
             <div className="space-y-1 relative z-10 md:pl-6">
               <span className="text-[9px] font-black tracking-[0.2em] text-blue-400 uppercase">Valor p/ Vendedor</span>
-              <p className="text-3xl font-black italic">R$ {metrics.commission_value.toFixed(2)}</p>
+              <p className="text-3xl font-black italic">{formatPriceDisplay(metrics.commission_value_cents)}</p>
             </div>
           </div>
 

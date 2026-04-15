@@ -2,72 +2,20 @@
   "name": "Product",
   "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "title": "Nome do Produto"
-    },
-    "description": {
-      "type": "string",
-      "title": "Descri\u00e7\u00e3o"
-    },
-    "category": {
-      "type": "string",
-      "title": "Categoria",
-      "enum": [
-        "Camisetas",
-        "Cal\u00e7as",
-        "Vestidos",
-        "Saias",
-        "Blusas",
-        "Jaquetas",
-        "Shorts",
-        "Acess\u00f3rios",
-        "Outros"
-      ]
-    },
-    "color": {
-      "type": "string",
-      "title": "Cor"
-    },
-    "brand": {
-      "type": "string",
-      "title": "Marca"
-    },
-    "cost_price": {
-      "type": "number",
-      "title": "Pre\u00e7o de Custo"
-    },
-    "sell_price": {
-      "type": "number",
-      "title": "Pre\u00e7o de Venda"
-    },
-    "sku": {
-      "type": "string",
-      "title": "C\u00f3digo/SKU"
-    },
-    "image_url": {
-      "type": "string",
-      "title": "Foto Principal"
-    },
-    "images": {
-      "type": "array",
-      "title": "Fotos",
-      "items": {
-        "type": "string"
-      }
-    },
-    "status": {
-      "type": "string",
-      "title": "Status",
-      "enum": [
-        "Ativo",
-        "Inativo"
-      ],
-      "default": "Ativo"
-    }
+    "name": {"type": "string", "title": "Nome do Produto"},
+    "description": {"type": "string", "title": "Descrição"},
+    "category": {"type": "string", "title": "Categoria", "enum": ["Camisetas","Calças","Vestidos","Saias","Blusas","Jaquetas","Shorts","Acessórios","Outros"]},
+    "color": {"type": "string", "title": "Cor"},
+    "brand": {"type": "string", "title": "Marca"},
+    "cost_price_cents": {"type": "integer", "title": "Preço de Custo (centavos)", "description": "Ex: 1050 for R$ 10,50"},
+    "sell_price_cents": {"type": "integer", "title": "Preço de Venda (centavos)", "description": "Ex: 2000 for R$ 20,00"},
+    "net_profit_cents": {"type": "integer", "title": "Lucro Líquido (centavos)"},
+    "commission_percent": {"type": "string", "title": "Comissão %"},
+    "commission_value_cents": {"type": "integer", "title": "Valor Comissão (centavos)"},
+    "sku": {"type": "string", "title": "Código/SKU"},
+    "image_url": {"type": "string", "title": "Foto Principal"},
+    "images": {"type": "array", "title": "Fotos", "items": {"type": "string"}},
+    "status": {"type": "string", "title": "Status", "enum": ["Ativo","Inativo"], "default": "Ativo"}
   },
-  "required": [
-    "name",
-    "sell_price"
-  ]
+  "required": ["name", "sell_price_cents"]
 }

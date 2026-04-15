@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { ShoppingBag, Save, Plus, Trash2, Loader2, Calendar, Truck, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  parsePriceToCents,
+  formatPriceDisplay
+} from "@/lib/formatters";
 import { supabase } from "../lib/supabaseClient";
 
 export default function PurchaseOrder() {
@@ -11,7 +15,7 @@ export default function PurchaseOrder() {
   
   // Itens da Ordem de Compra
   const [items, setItems] = useState([
-    { product_id: "", color: "", size: "", quantity: 0, cost_price: 0 }
+    { product_id: "", color: "", size: "", quantity: "", cost_price: "" }
   ]);
 
   useEffect(() => {
@@ -38,7 +42,11 @@ export default function PurchaseOrder() {
   };
 
   const calculateTotal = () => {
-    return items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.cost_price)), 0);
+    return formatPriceDisplay(addCents(...items.map(item => {
+      const qty = Number(item.quantity) || 0;
+      const costCents = parsePriceToCents(item.cost_price);
+      return BigInt(Math.round(qty)) * costCents;
+    })));
   };
 
   async function handleSubmit(e) {
@@ -118,7 +126,7 @@ export default function PurchaseOrder() {
             <h2 className="text-xs font-black text-slate-900 tracking-[0.2em] uppercase flex items-center gap-2">
               <ShoppingBag className="h-4 w-4 text-magenta" /> Itens da Grade
             </h2>
-            <p className="text-[10px] font-black text-slate-400">TOTAL DA ORDEM: <span className="text-slate-900">R$ {calculateTotal().toFixed(2)}</span></p>
+            <p className="text-[10px] font-black text-slate-400">TOTAL DA ORDEM: <span className="text-slate-900">{calculateTotal()}</span></p>
           </div>
 
           {items.map((item, index) => (

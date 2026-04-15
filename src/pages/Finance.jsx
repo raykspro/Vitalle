@@ -3,6 +3,11 @@ import { useUser } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabaseClient';
 import { DollarSign, Calendar, AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  parsePriceToCents,
+  formatPriceDisplay,
+  addCents
+} from "@/lib/formatters";
 
 const Finance = () => {
   const { user } = useUser();
@@ -51,7 +56,7 @@ const Finance = () => {
       <div className="grid gap-6 md:grid-cols-3">
         <div className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-2xl">
           <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase mb-2">Total a Pagar</p>
-          <h3 className="text-3xl font-black italic">R$ {records.filter(r => r.status === 'Pendente').reduce((acc, curr) => acc + curr.amount, 0).toFixed(2)}</h3>
+          <h3 className="text-3xl font-black italic">{formatPriceDisplay(addCents(...records.filter(r => r.status === 'Pendente').map(r => parsePriceToCents(r.amount))))}</h3>
         </div>
       </div>
 
@@ -77,7 +82,7 @@ const Finance = () => {
               records.map((record) => (
                 <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="p-6 font-bold text-slate-700">{record.description}</td>
-                  <td className="p-6 font-black text-slate-900 italic">R$ {record.amount.toFixed(2)}</td>
+                  <td className="p-6 font-black text-slate-900 italic">{formatPriceDisplay(parsePriceToCents(record.amount))}</td>
                   <td className="p-6 text-slate-500 font-medium">
                     {new Date(record.due_date).toLocaleDateString('pt-BR')}
                   </td>

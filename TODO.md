@@ -1,18 +1,29 @@
-# Vitalle Finalization Plan - Approved by User ✅ ALL COMPLETE
+# TODO: Padronização Decimal Financeira
 
-## Completed:
-- [x] Analyzed src/App.jsx - syntax clean, no ts(1128) fixes needed
-- [x] Validated Dashboard routes/imports - consistent with production structure
-- [x] Read Layout.jsx, AuthGuard.jsx, vercel.json - all good
-- [x] git add --all
-- [x] git commit -m "fix: final syntax validation and production sync"
-- [x] git push origin main --force (46ebecb -> GitHub updated)
-- [x] vercel --prod --yes (deploy running)
+## ✅ 1. Criar TODO.md [COMPLETO]
+## ✅ 2. src/lib/formatters.js [COMPLETO]
+## ✅ 3. src/pages/Products.jsx [COMPLETO]
 
-**Protocolo de Deploy concluído!**
-- GitHub: https://github.com/raykspro/Vitalle (commit 46ebecb)
-- Production URL: https://vitallefashion-gghtyupnw-raykspros-projects.vercel.app (monitor build at https://vercel.com/raykspros-projects/vitallefashion/9CPn8qyFykjmvR9DGeeJeNehiKnJ)
+## ✅ 4. entities/Product.json [COMPLETO]
 
-Syntax corrigida, paths validados, deploy em produção.
+## ⬜ 5. Teste
+- npm run dev
+- Testar form: cost=10.01 → 1001 cents etc.
 
+## ⬜ 3. src/pages/Products.jsx
+- Refatorar useEffect para cents
+- Atualizar handleSave (salvar *_cents)
+- Manter UI inputs como string/number step=0.01
+
+## ⬜ 4. entities/Product.json
+- Adicionar cost_price_cents, sell_price_cents, net_profit_cents: integer
+
+## ⬜ 5. Teste
+- npm run dev
+- Testar form: cost=10.01 → 1001 cents etc.
+
+## ⬜ 6. Secondary files (PurchaseOrder etc.)
+
+## ⬜ 7. Supabase migration
+- ALTER TABLE products ADD COLUMN cost_price_cents bigint;
 

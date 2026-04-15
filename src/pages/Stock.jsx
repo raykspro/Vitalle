@@ -209,7 +209,8 @@ export default function Stock() {
                         <td className="p-4 text-right hidden sm:table-cell">
                           {(() => { 
                             const p = products.find(pr => pr.name === item.product_name); 
-                            return p?.sell_price ? <span className="font-bold text-magenta">R$ {p.sell_price.toLocaleString('pt-BR')}</span> : <span className="text-slate-300">—</span>; 
+                            const sellCents = parsePriceToCents(p?.sell_price);
+                            return sellCents > 0n ? <span className="font-bold text-magenta">{formatPriceDisplay(sellCents)}</span> : <span className="text-slate-300">—</span>; 
                           })()}
                         </td>
                         <td className="p-4 text-right">
