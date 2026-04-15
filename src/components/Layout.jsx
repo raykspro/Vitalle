@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Home, Package, Shirt, Users, Truck, ShoppingCart, ShoppingBag, Wallet, History, Settings, LogOut, Menu, X } from "lucide-react";
+import { Home, Package, Shirt, Users, Truck, ShoppingCart, ShoppingBag, Wallet, History, Settings, LogOut, Menu, X } from "lucide-center";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@clerk/clerk-react";
@@ -36,7 +36,7 @@ export default function Layout({ children }) {
                 cn(
                   "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition-all duration-300 tracking-wide",
                   isActive
-                    ? "bg-magenta text-white shadow-lg shadow-magenta" // ✅ PADRÃO VITALLE
+                    ? "bg-magenta text-white shadow-lg shadow-magenta"
                     : "text-slate-500 hover:bg-magenta/5 hover:text-magenta"
                 )
               }
@@ -61,7 +61,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
-      {/* HEADER MOBILE - VISIBILIDADE TOTAL */}
+      {/* HEADER MOBILE */}
       <div className="lg:hidden flex items-center justify-between p-4 bg-white border-b-2 border-slate-100 sticky top-0 z-50">
         <div className="flex flex-col">
           <h1 className="text-xl font-black text-magenta tracking-tighter italic">VITALLE</h1>
