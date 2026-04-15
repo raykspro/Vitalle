@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import EmptyState from "../components/EmptyState";
+import { cn } from "@/lib/utils"; // Certifique-se de ter essa utilidade
 
 const sizes = ["PP", "P", "M", "G", "GG", "3G", "Único"];
 
@@ -31,19 +32,13 @@ export default function Stock() {
   async function loadData(signal) {
     try {
       const [items, prods] = await Promise.all([
-        cline.entities.StockItem.list("-created_date", 500, { signal }).catch((error) => {
-          console.error("Erro ao carregar itens do estoque:", error);
-          return [];
-        }),
-        cline.entities.Product.list("-created_date", 200, { signal }).catch((error) => {
-          console.error("Erro ao carregar produtos:", error);
-          return [];
-        }),
+        cline.entities.StockItem.list("-created_date", 500, { signal }),
+        cline.entities.Product.list("-created_date", 200, { signal }),
       ]);
       setStockItems(items || []);
       setProducts(prods || []);
     } catch (error) {
-      console.error("Erro ao carregar dados do estoque:", error);
+      console.error("Erro ao carregar dados:", error);
     } finally {
       setLoading(false);
     }
@@ -63,8 +58,6 @@ export default function Stock() {
         size: form.size,
         color: form.color,
         quantity: Number(form.quantity) || 0,
-      }).catch((error) => {
-        console.error("Erro ao criar item no estoque:", error);
       });
       await cline.entities.StockMovement.create({
         type: "Entrada",
@@ -75,13 +68,11 @@ export default function Stock() {
         quantity: Number(form.quantity) || 0,
         reference_type: "Ajuste Manual",
         movement_date: new Date().toISOString(),
-      }).catch((error) => {
-        console.error("Erro ao registrar movimento de entrada:", error);
       });
       setDialogOpen(false);
       await loadData();
     } catch (error) {
-      console.error("Erro ao salvar item no estoque:", error);
+      console.error("Erro ao salvar:", error);
     }
   }
 
@@ -91,9 +82,7 @@ export default function Stock() {
     const delta = adjustType === "Entrada" ? qty : -qty;
     const newQty = Math.max(0, (adjustItem.quantity || 0) + delta);
     try {
-      await cline.entities.StockItem.update(adjustItem.id, { quantity: newQty }).catch((error) => {
-        console.error("Erro ao atualizar quantidade no estoque:", error);
-      });
+      await cline.entities.StockItem.update(adjustItem.id, { quantity: newQty });
       await cline.entities.StockMovement.create({
         type: adjustType,
         product_id: adjustItem.product_id,
@@ -103,26 +92,22 @@ export default function Stock() {
         quantity: qty,
         reference_type: "Ajuste Manual",
         movement_date: new Date().toISOString(),
-      }).catch((error) => {
-        console.error("Erro ao registrar movimento de ajuste:", error);
       });
       setAdjustItem(null);
       setAdjustQty(1);
       await loadData();
     } catch (error) {
-      console.error("Erro ao ajustar item no estoque:", error);
+      console.error("Erro ao ajustar:", error);
     }
   }
 
   async function handleDelete(id) {
     if (!confirm("Deseja excluir este item do estoque?")) return;
     try {
-      await cline.entities.StockItem.delete(id).catch((error) => {
-        console.error("Erro ao excluir item do estoque:", error);
-      });
+      await cline.entities.StockItem.delete(id);
       await loadData();
     } catch (error) {
-      console.error("Erro ao excluir item no estoque:", error);
+      console.error("Erro ao excluir:", error);
     }
   }
 
@@ -132,7 +117,6 @@ export default function Stock() {
     s.size?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Group by product
   const grouped = {};
   filtered.forEach((item) => {
     if (!grouped[item.product_name]) grouped[item.product_name] = [];
@@ -145,22 +129,28 @@ export default function Stock() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-magenta/30 border-t-magenta rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* HEADER ACTIONS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar no estoque..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input 
+            placeholder="Buscar no estoque..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className="pl-10 bg-white border-slate-200 rounded-xl" 
+          />
         </div>
         <div className="flex gap-2">
           <CatalogExport stockItems={stockItems} products={products} />
-          <Button onClick={openNew} className="gap-2">
-            <Plus className="h-4 w-4" /> Adicionar ao Estoque
+          <Button onClick={openNew} className="btn-vitalle gap-2 h-11">
+            <Plus className="h-4 w-4" /> ADICIONAR AO ESTOQUE
           </Button>
         </div>
       </div>
@@ -170,62 +160,65 @@ export default function Stock() {
           icon={Shirt}
           title="Estoque vazio"
           description="Adicione itens ao estoque com tamanho, cor e quantidade"
-          action={<Button onClick={openNew} className="gap-2"><Plus className="h-4 w-4" /> Adicionar Item</Button>}
+          action={<Button onClick={openNew} className="btn-vitalle gap-2"><Plus className="h-4 w-4" /> ADICIONAR ITEM</Button>}
         />
       ) : (
-        <div className="space-y-6">
+        <div className="grid gap-6">
           {Object.entries(grouped).map(([productName, items]) => (
-            <div key={productName} className="bg-card rounded-xl border border-border overflow-hidden">
-              <div className="p-4 border-b border-border bg-muted/30 flex items-center gap-3">
+            <div key={productName} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-slate-50 bg-slate-50/50 flex items-center gap-4">
                 {productImageMap[productName] ? (
-                  <img src={productImageMap[productName]} alt={productName} className="h-12 w-12 rounded-lg object-cover border border-border flex-shrink-0" />
+                  <img src={productImageMap[productName]} alt={productName} className="h-14 w-14 rounded-2xl object-cover border-2 border-white shadow-sm" />
                 ) : (
-                  <div className="h-12 w-12 rounded-lg border border-border bg-muted flex items-center justify-center flex-shrink-0">
-                    <Shirt className="h-5 w-5 text-muted-foreground" />
+                  <div className="h-14 w-14 rounded-2xl border-2 border-white bg-slate-200 flex items-center justify-center shadow-sm">
+                    <Shirt className="h-6 w-6 text-slate-400" />
                   </div>
                 )}
                 <div>
-                  <h3 className="font-semibold">{productName}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {items.reduce((s, i) => s + (i.quantity || 0), 0)} unidades no total
+                  <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">{productName}</h3>
+                  <p className="text-[10px] font-bold text-magenta uppercase tracking-widest">
+                    {items.reduce((s, i) => s + (i.quantity || 0), 0)} unidades em estoque
                   </p>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-muted-foreground">
-                      <th className="text-left p-3 font-medium">Tamanho</th>
-                      <th className="text-left p-3 font-medium">Cor</th>
-                      <th className="text-center p-3 font-medium">Quantidade</th>
-                      <th className="text-right p-3 font-medium hidden sm:table-cell">Valor Venda</th>
-                      <th className="text-right p-3 font-medium">Ações</th>
+                    <tr className="text-slate-400 border-b border-slate-50">
+                      <th className="text-left p-4 font-black uppercase text-[10px] tracking-widest">Tamanho</th>
+                      <th className="text-left p-4 font-black uppercase text-[10px] tracking-widest">Cor</th>
+                      <th className="text-center p-4 font-black uppercase text-[10px] tracking-widest">Qtd</th>
+                      <th className="text-right p-4 font-black uppercase text-[10px] tracking-widest hidden sm:table-cell">Preço</th>
+                      <th className="text-right p-4 font-black uppercase text-[10px] tracking-widest">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border">
+                  <tbody className="divide-y divide-slate-50">
                     {items.map((item) => (
-                     <tr key={item.id} className={`hover:bg-muted/30 ${item.quantity === 0 ? "opacity-40" : ""}`}>
-                        <td className="p-3">
-                          <span className="px-2 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-medium">
+                      <tr key={item.id} className={cn("hover:bg-slate-50/50 transition-colors", item.quantity === 0 && "opacity-40")}>
+                        <td className="p-4">
+                          <span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-black">
                             {item.size}
                           </span>
                         </td>
-                        <td className="p-3">{item.color}</td>
-                        <td className="p-3">
-                          <div className="flex items-center justify-center">
-                            <span className={`font-semibold ${item.quantity > 0 ? "text-green-600" : "text-red-600"}`}>{item.quantity}</span>
-                          </div>
+                        <td className="p-4 font-bold text-slate-600">{item.color}</td>
+                        <td className="p-4 text-center">
+                          <span className={cn("font-black text-base", item.quantity > 0 ? "text-slate-800" : "text-red-500")}>
+                            {item.quantity}
+                          </span>
                         </td>
-                        <td className="p-3 text-right hidden sm:table-cell">
-                          {(() => { const p = products.find(pr => pr.name === item.product_name); return p?.sell_price ? <span className="text-sm font-medium text-primary">{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.sell_price)}</span> : <span className="text-muted-foreground">—</span>; })()}
+                        <td className="p-4 text-right hidden sm:table-cell">
+                          {(() => { 
+                            const p = products.find(pr => pr.name === item.product_name); 
+                            return p?.sell_price ? <span className="font-bold text-magenta">R$ {p.sell_price.toLocaleString('pt-BR')}</span> : <span className="text-slate-300">—</span>; 
+                          })()}
                         </td>
-                        <td className="p-3 text-right">
-                          <div className="flex justify-end gap-1">
-                            <button onClick={() => { setAdjustItem(item); setAdjustType("Entrada"); setAdjustQty(1); }} className="p-1.5 rounded-lg hover:bg-muted" title="Modificar estoque">
-                              <SlidersHorizontal className="h-3.5 w-3.5" />
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => { setAdjustItem(item); setAdjustType("Entrada"); setAdjustQty(1); }} className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-magenta hover:text-white transition-all">
+                              <SlidersHorizontal className="h-4 w-4" />
                             </button>
-                            <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
+                            <button onClick={() => handleDelete(item.id)} className="p-2 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -239,75 +232,86 @@ export default function Stock() {
         </div>
       )}
 
+      {/* DIALOG: ADICIONAR AO ESTOQUE */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Adicionar ao Estoque</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div>
-              <Label>Produto *</Label>
+        <DialogContent className="max-w-md bg-white rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+          <div className="bg-magenta p-8 text-white">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic">Novo Item</DialogTitle>
+            <p className="text-[10px] font-bold opacity-80 uppercase tracking-[0.2em] mt-1">Abastecimento de Estoque</p>
+          </div>
+          <div className="p-8 space-y-5">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Selecione o Produto *</Label>
               <Select value={form.product_id} onValueChange={(v) => setForm({ ...form, product_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione um produto" /></SelectTrigger>
+                <SelectTrigger className="input-vitalle h-14"><SelectValue placeholder="Escolha a peça..." /></SelectTrigger>
                 <SelectContent>
                   {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Tamanho *</Label>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tamanho *</Label>
                 <Select value={form.size} onValueChange={(v) => setForm({ ...form, size: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger className="input-vitalle h-14"><SelectValue placeholder="Tam" /></SelectTrigger>
                   <SelectContent>
                     {sizes.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Cor *</Label>
-                <Input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="Ex: Preto" />
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cor / Estampa *</Label>
+                <Input className="input-vitalle h-14" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="Ex: Oncinha" />
               </div>
             </div>
-            <div>
-              <Label>Quantidade *</Label>
-              <Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantidade de Peças *</Label>
+              <Input type="number" className="input-vitalle h-14 text-center text-lg" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
             </div>
-            <Button onClick={handleSave} className="w-full" disabled={!form.product_id || !form.size || !form.color || !form.quantity}>
-              Adicionar
+            <Button 
+              onClick={handleSave} 
+              className="btn-vitalle w-full h-16 mt-4 text-base" 
+              disabled={!form.product_id || !form.size || !form.color || !form.quantity}
+            >
+              CONFIRMAR ENTRADA
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Adjust stock dialog */}
+      {/* DIALOG: AJUSTE DE ESTOQUE */}
       <Dialog open={!!adjustItem} onOpenChange={(v) => !v && setAdjustItem(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Modificar Estoque</DialogTitle>
-          </DialogHeader>
-          {adjustItem && (
-            <div className="space-y-4 mt-2">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{adjustItem.product_name}</span> — {adjustItem.size} / {adjustItem.color}
+        <DialogContent className="max-w-sm bg-white rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+          <div className="bg-slate-900 p-8 text-white">
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter italic">Ajustar Estoque</DialogTitle>
+            {adjustItem && (
+              <p className="text-[10px] font-bold text-magenta uppercase tracking-widest mt-1">
+                {adjustItem.product_name} — {adjustItem.size}
               </p>
-              <p className="text-sm">Quantidade atual: <span className="font-bold">{adjustItem.quantity}</span></p>
-              <div>
-                <Label>Tipo de Ajuste</Label>
+            )}
+          </div>
+          {adjustItem && (
+            <div className="p-8 space-y-6">
+              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <span className="text-xs font-bold text-slate-400 uppercase">Saldo Atual</span>
+                <span className="text-2xl font-black text-slate-800">{adjustItem.quantity}</span>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipo de Movimentação</Label>
                 <Select value={adjustType} onValueChange={setAdjustType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="input-vitalle h-14"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Entrada">Entrada (adicionar)</SelectItem>
-                    <SelectItem value="Saída">Saída (remover)</SelectItem>
+                    <SelectItem value="Entrada">Entrada (Reposição)</SelectItem>
+                    <SelectItem value="Saída">Saída (Ajuste/Perda)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Quantidade</Label>
-                <Input type="number" min="1" value={adjustQty} onChange={(e) => setAdjustQty(e.target.value)} />
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantidade</Label>
+                <Input type="number" min="1" className="input-vitalle h-14 text-center text-lg" value={adjustQty} onChange={(e) => setAdjustQty(e.target.value)} />
               </div>
-              <Button onClick={handleAdjust} className="w-full" disabled={!adjustQty || Number(adjustQty) <= 0}>
-                Confirmar Ajuste
+              <Button onClick={handleAdjust} className="btn-vitalle w-full h-14" disabled={!adjustQty || Number(adjustQty) <= 0}>
+                ATUALIZAR SALDO
               </Button>
             </div>
           )}
