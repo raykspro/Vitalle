@@ -14,8 +14,13 @@ if (!PUBLISHABLE_KEY) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-        <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignInUrl="/dashboard" afterSignUpUrl="/dashboard" signInForceRedirectUrl="/dashboard" forceRedirectUrl="/dashboard">
-          <App />
+      {/* Usando apenas as chaves modernas de redirecionamento forçado */}
+      <ClerkProvider 
+        publishableKey={PUBLISHABLE_KEY} 
+        signInForceRedirectUrl="/dashboard"
+        signUpForceRedirectUrl="/dashboard"
+      >
+        <App />
       </ClerkProvider>
     </BrowserRouter>
   </React.StrictMode>

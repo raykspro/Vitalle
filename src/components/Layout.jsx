@@ -15,12 +15,13 @@ const navigation = [
   { to: "/settings", label: "CONFIGURAÇÕES", icon: Settings },
 ];
 
-export default function Layout() {
+// Adicionamos { children } para aceitar o Dashboard diretamente
+export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-screen-2xl flex-col lg:flex-row">
         <aside className="border-b border-border bg-card lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r">
-  <div className="border-b border-magenta/20 p-6 bg-gradient-to-r from-magenta/5 to-boutique-bg/50">
+          <div className="border-b border-magenta/20 p-6 bg-gradient-to-r from-magenta/5 to-boutique-bg/50">
             <h1 className="text-2xl font-black text-magenta tracking-widest">VITALLE</h1>
             <p className="text-xs text-magenta/70 font-bold tracking-[0.3em]">BOUTIQUE MANAGEMENT</p>
           </div>
@@ -28,12 +29,10 @@ export default function Layout() {
           <nav className="grid gap-1 p-4">
             {navigation.map((item) => {
               const Icon = item.icon;
-
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to === "/"}
                   className={({ isActive }) =>
                     cn(
                       "flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-colors",
@@ -52,7 +51,8 @@ export default function Layout() {
         </aside>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          {/* Prioriza o componente filho, se não houver, usa o Outlet das rotas */}
+          {children || <Outlet />}
         </main>
       </div>
     </div>
