@@ -5,58 +5,44 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --font-inter: 'Inter', sans-serif;
-    --background: 240 33% 98%;
-    --foreground: 0 0% 10%;
-    --magenta-vitalle: 325 89% 65%; 
-    --primary: var(--magenta-vitalle);
-    --card: 0 0% 100%;
-    --border: 240 6% 90%;
-    --radius: 2.5rem;
-  }
-
   body {
-    @apply bg-[#FDFBF7] text-foreground font-inter antialiased overflow-x-hidden;
+    @apply bg-[#FDFBF7] text-slate-900 font-inter antialiased overflow-x-hidden;
   }
-
   h1, h2, h3 {
     @apply uppercase tracking-tighter font-black;
   }
 }
 
-@layer utilities {
-  .bg-magenta {
-    background-color: hsl(325 89% 65%) !important;
-  }
-  .text-magenta {
-    color: hsl(325 89% 65%) !important;
-  }
-  .border-magenta {
-    border-color: hsl(325 89% 65%) !important;
-  }
-  .shadow-magenta {
-    box-shadow: 0 10px 15px -3px rgba(217, 70, 239, 0.2);
-  }
+/* Usando CSS puro para as classes da Vitalle para o build nunca falhar */
+.btn-vitalle {
+  background-color: #d946ef;
+  color: white;
+  border-radius: 1rem;
+  font-weight: 900;
+  padding: 1rem 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s;
+  box-shadow: 0 10px 15px -3px rgba(217, 70, 239, 0.2);
 }
 
-@layer components {
-  .card-vitalle {
-    @apply bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-8 transition-all;
-  }
-  
-  .btn-vitalle {
-    @apply bg-magenta text-white rounded-2xl font-black px-8 py-4 uppercase tracking-widest transition-all shadow-lg shadow-magenta;
-  }
+.btn-vitalle:hover {
+  transform: scale(1.05);
+  background-color: #c026d3;
+}
 
-  /* Ajustado para não usar focus: do tailwind em classe customizada */
-  .input-vitalle {
-    @apply bg-slate-50 border-2 border-transparent rounded-2xl p-4 text-sm font-bold outline-none transition-all;
-  }
+.input-vitalle {
+  background-color: #f8fafc;
+  border: 2px solid transparent;
+  border-radius: 1rem;
+  padding: 1rem;
+  font-weight: 700;
+  outline: none;
+  transition: all 0.3s;
+  width: 100%;
+}
 
-  /* CSS Puro para o foco, evitando erro no build */
-  .input-vitalle:focus {
-    border-color: hsl(325 89% 65%);
-    background-color: white;
-  }
+.input-vitalle:focus {
+  border-color: #d946ef;
+  background-color: white;
 }

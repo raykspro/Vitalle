@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Home, Package, Shirt, Users, Truck, ShoppingCart, ShoppingBag, Wallet, History, Settings, LogOut, Menu, X } from "lucide-center";
+import { Home, Package, Shirt, Users, Truck, ShoppingCart, ShoppingBag, Wallet, History, Settings, LogOut, Menu, X } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@clerk/clerk-react";
