@@ -24,8 +24,8 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isSignedIn) {
-      navigate("/dashboard");
+    if (!isSignedIn) {
+      navigate("/login");
     }
   }, [isSignedIn, navigate]);
 
@@ -33,7 +33,8 @@ function App() {
     <ErrorBoundary>
       <Routes>
         {/* Login */}
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         
         {/* Protected Routes */}
         <Route element={<AuthGuard />}>
@@ -48,7 +49,7 @@ function App() {
           <Route path="/stock" element={<Layout><Stock /></Layout>} />
           <Route path="/stockhistory" element={<Layout><StockHistory /></Layout>} />
           <Route path="/suppliers" element={<Layout><Suppliers /></Layout>} />
-          <Route path="*" element={<Layout><Navigate to="/dashboard" replace /></Layout>} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Route>
       </Routes>
     </ErrorBoundary>
