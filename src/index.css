@@ -32,7 +32,9 @@
   .text-magenta {
     color: hsl(325 89% 65%) !important;
   }
-  /* Sombra com 20% de opacidade já embutida */
+  .border-magenta {
+    border-color: hsl(325 89% 65%) !important;
+  }
   .shadow-magenta {
     box-shadow: 0 10px 15px -3px rgba(217, 70, 239, 0.2);
   }
@@ -40,14 +42,21 @@
 
 @layer components {
   .card-vitalle {
-    @apply bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-8 transition-all hover:border-magenta/30;
+    @apply bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-8 transition-all;
   }
   
   .btn-vitalle {
-    @apply bg-magenta text-white rounded-2xl font-black px-8 py-4 uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-magenta;
+    @apply bg-magenta text-white rounded-2xl font-black px-8 py-4 uppercase tracking-widest transition-all shadow-lg shadow-magenta;
   }
 
+  /* Ajustado para não usar focus: do tailwind em classe customizada */
   .input-vitalle {
-    @apply bg-slate-50 border-2 border-transparent focus:border-magenta focus:bg-white rounded-2xl p-4 text-sm font-bold outline-none transition-all;
+    @apply bg-slate-50 border-2 border-transparent rounded-2xl p-4 text-sm font-bold outline-none transition-all;
+  }
+
+  /* CSS Puro para o foco, evitando erro no build */
+  .input-vitalle:focus {
+    border-color: hsl(325 89% 65%);
+    background-color: white;
   }
 }
