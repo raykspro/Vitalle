@@ -1,48 +1,60 @@
-import React, { useState } from "react";
-import { Plus, Archive, Save, X, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Save, X, Loader2, DollarSign, Percent, UserCheck, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "../lib/supabaseClient"; // CAMINHO AJUSTADO PARA O SEU PROJETO
+import { supabase } from "../lib/supabaseClient";
 
 export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Estados para o formulário
-  const [nome, setNome] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [preco, setPreco] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "",
+    cost_price: "",
+    sell_price: "",
+    commission_percent: "5", // Padrão de 5%
+    brand: "Vitalle",
+    color: "",
+    sku: "",
+    status: "Ativo"
+  });
 
-  const categories = ["BABY DOLL", "BABY DOLL INFANTIL", "CAMISOLA"];
+  const [metrics, setMetrics] = useState({ profit: 0, margin: 0, commission_value: 0, net_profit: 0 });
+
+  useEffect(() => {
+    const cost = parseFloat(formData.cost_price) || 0;
+    const sell = parseFloat(formData.sell_price) || 0;
+    const commPer = parseFloat(formData.commission_percent) || 0;
+    
+    if (sell > 0) {
+      const commValue = (sell * commPer) / 100;
+      const bruteProfit = sell - cost;
+      const netProfit = bruteProfit - commValue;
+      const margin = (netProfit / sell) * 100;
+
+      setMetrics({ 
+        profit: bruteProfit, 
+        margin: margin, 
+        commission_value: commValue,
+        net_profit: netProfit
+      });
+    }
+  }, [formData.cost_price, formData.sell_price, formData.commission_percent]);
 
   async function handleSave(e) {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // Tenta inserir na tabela 'products'
-      const { error } = await supabase
-        .from('products') 
-        .insert([
-          { 
-            name: nome, 
-            category: categoria, 
-            price: parseFloat(preco) 
-          }
-        ]);
-
+      const { error } = await supabase.from('products').insert([{
+        ...formData,
+        commission_value: metrics.commission_value,
+        net_profit: metrics.net_profit
+      }]);
       if (error) throw error;
-
-      alert("PEÇA CADASTRADA COM SUCESSO! 💎");
-      
-      // Limpa os campos para o próximo cadastro
-      setNome("");
-      setCategoria("");
-      setPreco("");
+      alert("PRODUTO E COMISSÃO REGISTRADOS! 💎");
       setShowForm(false);
-      
     } catch (error) {
-      console.error("Erro na Vitalle:", error);
-      alert("Erro ao salvar: " + error.message);
+      alert("Erro na Vitalle: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -50,94 +62,68 @@ export default function Products() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Produtos</h1>
-          <p className="text-slate-500 font-medium italic tracking-wide text-sm">Gestão de catálogo premium.</p>
-        </div>
-        
-        <button 
-          onClick={() => setShowForm(!showForm)}
-          className={cn(
-            "flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[10px] tracking-[0.2em] transition-all shadow-lg active:scale-95",
-            showForm ? "bg-slate-900 text-white" : "bg-magenta text-white shadow-magenta/20"
-          )}
-        >
-          {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {showForm ? "FECHAR" : "NOVO PRODUTO"}
+      <div className="flex justify-between items-center">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">VITALLE GESTÃO</h1>
+        <button onClick={() => setShowForm(!showForm)} className={cn("px-8 py-4 rounded-2xl font-black text-[10px] tracking-widest transition-all shadow-lg", showForm ? "bg-slate-900 text-white" : "bg-magenta text-white shadow-magenta/20")}>
+          {showForm ? "CANCELAR" : "NOVO PRODUTO"}
         </button>
       </div>
 
-      {/* Formulário de Cadastro */}
       {showForm && (
-        <div className="bg-white rounded-[2.5rem] p-10 border-2 border-magenta/10 shadow-2xl animate-in slide-in-from-top-4 duration-500">
-          <form onSubmit={handleSave} className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-2">NOME DA PEÇA</label>
-              <input 
-                required
-                type="text" 
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Ex: Baby Doll de Seda" 
-                className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-bold focus:ring-2 focus:ring-magenta/30 transition-all placeholder:text-slate-300" 
-              />
+        <form onSubmit={handleSave} className="bg-white rounded-[2.5rem] p-10 border-2 border-magenta/10 shadow-2xl space-y-8">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Preço de Custo</label>
+              <input type="number" step="0.01" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-2">CATEGORIA</label>
-              <select 
-                required
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-bold focus:ring-2 focus:ring-magenta/30 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">SELECIONE...</option>
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-magenta tracking-widest uppercase ml-2 italic">Preço de Venda</label>
+              <input type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-magenta/30" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-2">PREÇO DE VENDA</label>
-              <div className="relative">
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-magenta text-sm">R$</span>
-                <input 
-                  required
-                  type="number" 
-                  step="0.01"
-                  value={preco}
-                  onChange={(e) => setPreco(e.target.value)}
-                  placeholder="0,00" 
-                  className="w-full bg-slate-50 border-none rounded-2xl p-5 pl-12 text-sm font-bold focus:ring-2 focus:ring-magenta/30 transition-all placeholder:text-slate-300" 
-                />
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-blue-500 tracking-widest uppercase ml-2 italic">Comissão (%)</label>
+              <input type="number" value={formData.commission_percent} onChange={e => setFormData({...formData, commission_percent: e.target.value})} className="bg-blue-50/50 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-200" />
+            </div>
+          </div>
+
+          {/* Painel Financeiro Avançado */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-8 rounded-[2.5rem] text-white">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-magenta">
+                <UserCheck className="h-4 w-4" />
+                <span className="text-[9px] font-black tracking-widest uppercase">Comissão Vendedor</span>
               </div>
+              <p className="text-2xl font-black italic">R$ {metrics.commission_value.toFixed(2)}</p>
             </div>
 
-            <div className="lg:col-span-3 flex justify-end">
-              <button 
-                disabled={loading}
-                type="submit"
-                className="bg-magenta text-white px-12 py-5 rounded-2xl font-black text-[10px] tracking-[0.3em] shadow-xl shadow-magenta/30 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {loading ? "ENVIANDO..." : "SALVAR NA VITALLE"}
-              </button>
+            <div className="space-y-1 border-x border-white/10 px-6">
+              <div className="flex items-center gap-2 text-green-400">
+                <DollarSign className="h-4 w-4" />
+                <span className="text-[9px] font-black tracking-widest uppercase">Lucro Líquido Real</span>
+              </div>
+              <p className="text-2xl font-black italic">R$ {metrics.net_profit.toFixed(2)}</p>
             </div>
-          </form>
-        </div>
+
+            <div className="space-y-1 pl-6">
+              <div className="flex items-center gap-2 text-blue-400">
+                <Percent className="h-4 w-4" />
+                <span className="text-[9px] font-black tracking-widest uppercase">Margem Final</span>
+              </div>
+              <p className={cn("text-2xl font-black italic", metrics.margin < 20 ? "text-red-400" : "text-white")}>
+                {metrics.margin.toFixed(2)}%
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button disabled={loading} type="submit" className="bg-magenta text-white px-12 py-5 rounded-2xl font-black text-[10px] tracking-[0.3em] shadow-xl hover:scale-105 transition-all">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "REGISTRAR PEÇA"}
+            </button>
+          </div>
+        </form>
       )}
-
-      {/* Indicador de Status */}
-      <div className="bg-white border border-slate-100 rounded-[2rem] p-8 flex items-center gap-6 shadow-sm">
-        <div className="bg-magenta/10 p-5 rounded-2xl text-magenta">
-          <Archive className="h-7 w-7" />
-        </div>
-        <div>
-          <p className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase">Status do Banco</p>
-          <p className="text-xl font-black text-slate-900 tracking-tight">VITALLE CONECTADA AO SUPABASE</p>
-        </div>
-      </div>
     </div>
   );
 }

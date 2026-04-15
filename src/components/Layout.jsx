@@ -1,4 +1,4 @@
-import { Home, Package, Shirt, Users, Truck, ShoppingCart, FileText, Wallet, History, Settings, LogOut } from "lucide-react";
+import { Home, Package, Shirt, Users, Truck, ShoppingCart, ShoppingBag, Wallet, History, Settings, LogOut } from "lucide-react"; // Importei ShoppingBag
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@clerk/clerk-react";
@@ -10,7 +10,8 @@ const navigation = [
   { to: "/customers", label: "CLIENTES", icon: Users },
   { to: "/suppliers", label: "FORNECEDORES", icon: Truck },
   { to: "/sales", label: "VENDAS", icon: ShoppingCart },
-  { to: "/invoices", label: "NOTAS FISCAIS", icon: FileText },
+  // 💎 TROCA REALIZADA AQUI: NOTAS FISCAIS -> ORDEM DE COMPRA
+  { to: "/purchase-order", label: "ORDEM DE COMPRA", icon: ShoppingBag }, 
   { to: "/payments", label: "PAGAMENTOS", icon: Wallet },
   { to: "/stockhistory", label: "HISTÓRICO", icon: History },
   { to: "/settings", label: "CONFIGURAÇÕES", icon: Settings },
@@ -26,7 +27,7 @@ export default function Layout({ children }) {
             <p className="text-[10px] text-magenta/60 font-black tracking-[0.4em] uppercase">Boutique Management</p>
           </div>
 
-          <nav className="flex flex-col justify-between h-[calc(100vh-120px)] p-4">
+          <nav className="flex flex-col justify-between h-[calc(100vh-120px)] p-4 overflow-y-auto"> {/* Adicionado scroll caso a tela seja pequena */}
             <div className="grid gap-2">
               {navigation.map((item) => {
                 const Icon = item.icon;

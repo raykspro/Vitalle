@@ -5,7 +5,8 @@ import AuthGuard from './components/AuthGuard';
 import Dashboard from './pages/Dashboard';
 import Finance from './pages/Finance';
 import Customers from './pages/Customers';
-import Invoices from './pages/Invoices';
+// 🗑️ REMOVIDO: import Invoices from './pages/Invoices';
+import PurchaseOrder from './pages/PurchaseOrder'; // ✅ ADICIONADO
 import Login from './pages/Login';
 import Payments from './pages/Payments';
 import Products from './pages/Products';
@@ -29,7 +30,10 @@ function App() {
         <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
         <Route path="/finance" element={<Layout><Finance /></Layout>} />
         <Route path="/customers" element={<Layout><Customers /></Layout>} />
-        <Route path="/invoices" element={<Layout><Invoices /></Layout>} />
+        
+        {/* ✅ TROCA REALIZADA: /invoices -> /purchase-order */}
+        <Route path="/purchase-order" element={<Layout><PurchaseOrder /></Layout>} />
+        
         <Route path="/products" element={<Layout><Products /></Layout>} />
         <Route path="/sales" element={<Layout><Sales /></Layout>} />
         <Route path="/stock" element={<Layout><Stock /></Layout>} />
