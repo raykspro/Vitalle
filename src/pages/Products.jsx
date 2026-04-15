@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Save, X, Loader2, DollarSign, Percent, UserCheck, Image as ImageIcon, Tag } from "lucide-react";
+import { Plus, Save, X, Loader2, DollarSign, Percent, UserCheck, Image as ImageIcon, Tag, Hash, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "../lib/supabaseClient";
-import { toast } from "sonner"; // Certifique-se de ter o sonner instalado
+import { toast } from "sonner";
 
 export default function Products() {
   const [showForm, setShowForm] = useState(false);
@@ -14,8 +14,9 @@ export default function Products() {
     cost_price: "",
     sell_price: "",
     commission_percent: "5",
-    brand: "Vitalle Exclusive", // Valor padrão de luxo
+    brand: "Vitalle Exclusive",
     image_url: "",
+    color: "",
     sku: "",
     status: "Ativo"
   });
@@ -48,7 +49,7 @@ export default function Products() {
     try {
       const { error } = await supabase.from('products').insert([{
         ...formData,
-        price: parseFloat(formData.sell_price), // Alinhado com o SQL que corrigimos
+        price: parseFloat(formData.sell_price),
         cost_price: parseFloat(formData.cost_price),
         commission_value: metrics.commission_value,
         net_profit: metrics.net_profit
@@ -56,127 +57,151 @@ export default function Products() {
 
       if (error) throw error;
 
-      // ✅ ALERTA PERSONALIZADO VITALLE
-      toast.success("💎 PEÇA REGISTRADA COM SUCESSO!", {
-        description: `${formData.name} foi adicionado ao catálogo de luxo.`,
+      toast.success("💎 VITALLE: PEÇA CADASTRADA!", {
+        description: `${formData.name} já está no sistema.`,
         className: "bg-magenta text-white font-black rounded-2xl border-none shadow-2xl",
       });
 
       setShowForm(false);
-      setFormData({ name: "", category: "", cost_price: "", sell_price: "", commission_percent: "5", brand: "Vitalle Exclusive", image_url: "", sku: "", status: "Ativo" });
+      setFormData({ name: "", category: "", cost_price: "", sell_price: "", commission_percent: "5", brand: "Vitalle Exclusive", image_url: "", color: "", sku: "", status: "Ativo" });
     } catch (error) {
-      toast.error("ERRO NA VITALLE", { description: error.message });
+      toast.error("ERRO NO CADASTRO", { description: error.message });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">VITALLE GESTÃO</h1>
-          <p className="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase mt-1">Catálogo de Produtos e Margens</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter">VITALLE GESTÃO</h1>
+          <p className="text-[10px] text-slate-500 font-bold tracking-[0.4em] uppercase mt-1">Inventário de Alto Padrão</p>
         </div>
         <button 
           onClick={() => setShowForm(!showForm)} 
-          className={cn("px-8 py-4 rounded-2xl font-black text-[10px] tracking-widest transition-all shadow-lg", 
-          showForm ? "bg-slate-900 text-white" : "bg-magenta text-white shadow-magenta/20 hover:scale-105")}
+          className={cn(
+            "w-full md:w-auto px-10 py-5 rounded-2xl font-black text-[11px] tracking-[0.3em] transition-all flex items-center justify-center gap-3", 
+            showForm ? "bg-slate-900 text-white shadow-xl" : "bg-magenta text-white shadow-magenta hover:scale-105"
+          )}
         >
-          {showForm ? "CANCELAR" : "NOVO PRODUTO"}
+          {showForm ? <><X className="h-4 w-4" /> CANCELAR</> : <><Plus className="h-4 w-4" /> NOVO PRODUTO</>}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSave} className="bg-white rounded-[2.5rem] p-10 border-2 border-magenta/5 shadow-2xl space-y-8">
+        <form onSubmit={handleSave} className="bg-white rounded-[2.5rem] p-6 lg:p-12 border border-slate-200 shadow-2xl space-y-10">
           
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* INFORMAÇÕES BÁSICAS */}
-            <div className="space-y-4 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Nome da Peça</label>
-                <input required type="text" placeholder="Ex: Baby Doll de Seda" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-magenta/20" />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Marca / Grife</label>
-                <div className="relative">
-                  <Tag className="absolute left-4 top-4 h-4 w-4 text-slate-300" />
-                  <input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-4 pl-12 text-sm font-bold" />
+          <div className="grid gap-8 lg:grid-cols-3">
+            
+            {/* COLUNA 1: IDENTIDADE */}
+            <div className="space-y-6">
+              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
+                <Tag className="h-4 w-4" /> Identidade da Peça
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="group">
+                  <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Nome do Produto</label>
+                  <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="input-vitalle w-full" placeholder="Ex: Conjunto Seda Italiana" />
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">URL da Foto</label>
-                <div className="relative">
-                  <ImageIcon className="absolute left-4 top-4 h-4 w-4 text-slate-300" />
-                  <input type="text" placeholder="https://imagem.com/foto.jpg" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-4 pl-12 text-sm font-bold" />
+                <div className="group">
+                  <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Marca / Grife</label>
+                  <input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="input-vitalle w-full" />
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Categoria</label>
-                <input type="text" placeholder="Lingerie / Noite" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">SKU / Ref</label>
+                    <input type="text" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} className="input-vitalle w-full" placeholder="VT-001" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Cor</label>
+                    <input type="text" value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="input-vitalle w-full" placeholder="Preto Luxo" />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* PRECIFICAÇÃO */}
-            <div className="bg-magenta/5 rounded-[2rem] p-6 space-y-4 border border-magenta/10">
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-slate-500 tracking-widest uppercase ml-2">Custo Unitário (R$)</label>
-                <input required type="number" step="0.01" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="bg-white border-none rounded-2xl p-4 text-sm font-bold shadow-sm" />
+            {/* COLUNA 2: MÍDIA E CATEGORIA */}
+            <div className="space-y-6">
+              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" /> Visual & Categoria
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Link da Foto (URL)</label>
+                  <input type="text" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="input-vitalle w-full" placeholder="https://..." />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Categoria</label>
+                  <input type="text" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="input-vitalle w-full" placeholder="Lingerie" />
+                </div>
               </div>
+            </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-magenta tracking-widest uppercase ml-2 italic">Preço de Venda (R$)</label>
-                <input required type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="bg-white border-none rounded-2xl p-4 text-sm font-black text-magenta shadow-md focus:ring-2 focus:ring-magenta/30" />
-              </div>
+            {/* COLUNA 3: FINANCEIRO */}
+            <div className="bg-slate-50 rounded-[2rem] p-6 border-2 border-magenta/5 space-y-6">
+              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
+                <DollarSign className="h-4 w-4" /> Precificação
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                  <label className="text-[9px] font-black text-slate-400 uppercase">Custo Unitário</label>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-400">R$</span>
+                    <input required type="number" step="0.01" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="w-full border-none p-0 text-lg font-black outline-none focus:ring-0" />
+                  </div>
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black text-blue-500 tracking-widest uppercase ml-2 italic">Comissão (%)</label>
-                <input type="number" value={formData.commission_percent} onChange={e => setFormData({...formData, commission_percent: e.target.value})} className="bg-blue-50 border-none rounded-2xl p-4 text-sm font-bold" />
+                <div className="bg-white p-4 rounded-2xl shadow-md border-2 border-magenta/20">
+                  <label className="text-[9px] font-black text-magenta uppercase">Preço de Venda</label>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-magenta">R$</span>
+                    <input required type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="w-full border-none p-0 text-lg font-black text-magenta outline-none focus:ring-0" />
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                  <label className="text-[9px] font-black text-blue-500 uppercase">Comissão (%)</label>
+                  <input type="number" value={formData.commission_percent} onChange={e => setFormData({...formData, commission_percent: e.target.value})} className="w-full border-none p-0 text-lg font-black text-blue-500 outline-none focus:ring-0" />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* PAINEL DE MÉTRICAS VITALLE */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-magenta/10 blur-[60px] rounded-full" />
+          {/* PAINEL DE PERFORMANCE (DARK MODE VITALLE) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-900 p-8 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-magenta/20 blur-[80px] rounded-full" />
             
-            <div className="space-y-1 relative z-10">
-              <div className="flex items-center gap-2 text-magenta">
-                <UserCheck className="h-4 w-4" />
-                <span className="text-[9px] font-black tracking-widest uppercase">Pagamento Vendedor</span>
-              </div>
-              <p className="text-2xl font-black italic">R$ {metrics.commission_value.toFixed(2)}</p>
+            <div className="space-y-1 relative z-10 border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0">
+              <span className="text-[9px] font-black tracking-[0.2em] text-magenta uppercase">Lucro Líquido Real</span>
+              <p className="text-3xl font-black italic text-green-400">R$ {metrics.net_profit.toFixed(2)}</p>
             </div>
 
-            <div className="space-y-1 border-x border-white/5 px-6 relative z-10">
-              <div className="flex items-center gap-2 text-green-400">
-                <DollarSign className="h-4 w-4" />
-                <span className="text-[9px] font-black tracking-widest uppercase">Lucro Líquido (Real)</span>
-              </div>
-              <p className="text-2xl font-black italic text-green-400">R$ {metrics.net_profit.toFixed(2)}</p>
-            </div>
-
-            <div className="space-y-1 pl-6 relative z-10">
-              <div className="flex items-center gap-2 text-blue-400">
-                <Percent className="h-4 w-4" />
-                <span className="text-[9px] font-black tracking-widest uppercase">Margem de Contribuição</span>
-              </div>
-              <p className={cn("text-3xl font-black italic", metrics.margin < 30 ? "text-red-400" : "text-white")}>
+            <div className="space-y-1 relative z-10 border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0 md:px-6">
+              <span className="text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase">Margem de Lucro</span>
+              <p className={cn("text-3xl font-black italic", metrics.margin < 30 ? "text-rose-500" : "text-white")}>
                 {metrics.margin.toFixed(1)}%
               </p>
             </div>
+
+            <div className="space-y-1 relative z-10 md:pl-6">
+              <span className="text-[9px] font-black tracking-[0.2em] text-blue-400 uppercase">Valor p/ Vendedor</span>
+              <p className="text-3xl font-black italic">R$ {metrics.commission_value.toFixed(2)}</p>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-center md:justify-end">
             <button 
               disabled={loading} 
               type="submit" 
-              className="bg-magenta hover:bg-magenta/90 text-white px-16 py-6 rounded-3xl font-black text-[11px] tracking-[0.4em] shadow-2xl shadow-magenta/30 hover:scale-105 transition-all flex items-center gap-3"
+              className="btn-vitalle w-full md:w-auto flex items-center justify-center gap-4"
             >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "FINALIZAR CADASTRO EXCLUSIVO"}
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "REGISTRAR PEÇA NA VITALLE"}
             </button>
           </div>
         </form>

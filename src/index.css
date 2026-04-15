@@ -9,30 +9,17 @@
     --font-inter: 'Inter', sans-serif;
     --background: 240 33% 98%;
     --foreground: 0 0% 10%;
+    
+    /* MAGENTA VITALLE OFICIAL */
+    --magenta-vitalle: 325 89% 65%; 
+    --primary: var(--magenta-vitalle);
+    
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
-    --primary: 325 89% 65%; /* O Magenta Vitalle */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 325 20% 95%;
-    --secondary-foreground: 325 40% 30%;
-    --muted: 240 5% 94%;
-    --muted-foreground: 240 5% 45%;
-    --accent: 325 89% 65%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 0 0% 98%;
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 325 89% 65%;
-    --radius: 3rem; /* Bordas arredondadas Boutique */
-    
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 10%;
-    --sidebar-primary: 325 89% 65%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-border: 240 6% 90%;
+    --radius: 2.5rem;
   }
 
   * {
@@ -40,22 +27,44 @@
   }
 
   body {
-    @apply bg-[#FDFBF7] text-foreground font-inter uppercase tracking-wider antialiased;
+    /* Removi o uppercase global para não quebrar links e textos longos */
+    @apply bg-[#FDFBF7] text-foreground font-inter antialiased overflow-x-hidden;
   }
 
-  /* Padronização de Tipografia Vitalle */
-  h1, h2, h3, h4, h5, h6, p, span, label, button, a {
-    @apply uppercase tracking-widest font-black;
+  /* Títulos e Identidade */
+  h1, h2, h3, .font-vitalle {
+    @apply uppercase tracking-tighter font-black;
   }
 }
 
-/* Utilitários Extras para o Dashboard */
+@layer utilities {
+  /* Forçando a classe Magenta que o Senhor usa nos componentes */
+  .bg-magenta {
+    background-color: hsl(325 89% 65%) !important;
+  }
+  .text-magenta {
+    color: hsl(325 89% 65%) !important;
+  }
+  .border-magenta {
+    border-color: hsl(325 89% 65%) !important;
+  }
+  .shadow-magenta {
+    box-shadow: 0 10px 15px -3px rgba(217, 70, 239, 0.3);
+  }
+}
+
 @layer components {
   .card-vitalle {
-    @apply bg-white border border-gray-100 shadow-sm rounded-[3rem] p-8 transition-all hover:border-[#d946ef]/30;
+    @apply bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-8 transition-all hover:border-magenta/30;
   }
   
-  .btn-magenta {
-    @apply bg-[#d946ef] text-white rounded-2xl font-black px-6 py-3 hover:bg-[#c026d3] transition-all;
+  /* Botão mestre que o Senhor pode usar em qualquer página */
+  .btn-vitalle {
+    @apply bg-magenta text-white rounded-2xl font-black px-8 py-4 uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg shadow-magenta/20;
+  }
+
+  /* Inputs que não somem no branco */
+  .input-vitalle {
+    @apply bg-slate-50 border-2 border-transparent focus:border-magenta focus:bg-white rounded-2xl p-4 text-sm font-bold outline-none transition-all;
   }
 }
