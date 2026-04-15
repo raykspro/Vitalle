@@ -23,11 +23,12 @@ function App() {
   const { isSignedIn } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!isSignedIn) {
-      navigate("/login");
-    }
-  }, [isSignedIn, navigate]);
+// useEffect navigation removed to avoid loops
+  // useEffect(() => {
+  //   if (!isSignedIn) {
+  //     navigate("/login");
+  //   }
+  // }, [isSignedIn, navigate]);
 
   return (
     <ErrorBoundary>

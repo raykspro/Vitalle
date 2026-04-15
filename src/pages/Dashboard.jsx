@@ -1,176 +1,21 @@
-import { useState, useEffect } from "react";
-import { useUser, SignOutButton } from '@clerk/clerk-react';
-import supabase from "@/lib/supabase";
-import { 
-  Package, ShoppingCart, Wallet, LayoutDashboard, Users, 
-  TrendingUp, AlertTriangle, LogOut, ShieldCheck, Menu, X,
-  FileText, History, Settings, Truck, Box
-} from "lucide-react";
-import { Link } from "react-router-dom";
-
-// Formatação de moeda padrão Vitalle
-const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+import { useState } from "react";
+import { useUser } from '@clerk/clerk-react';
 
 export default function Dashboard() {
   const { user } = useUser();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ products: 0, customers: 0, sales: [], payments: [], receivablesTotal: 0, payablesTotal: 0 });
-
-  const admins = ['rayan', 'julia', 'raykspro']; 
-  const isAdmin = admins.includes(user?.username?.toLowerCase());
-  const NOME_MESTRE = (user?.username || "MESTRE").toUpperCase();
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        // Buscando dados reais do seu Supabase
-        const { count: pCount } = await supabase.from('produtos').select('*', { count: 'exact', head: true });
-        const { count: cCount } = await supabase.from('clientes').select('*', { count: 'exact', head: true });
-        const { data: sData } = await supabase.from('vendas').select('*').order('created_at', { ascending: false }).limit(3);
-        // Somas boutique: A RECEBER (tipo RECEBER + PENDENTE) e A PAGAR (tipo PAGAR/COMISSAO + PENDENTE)
-        const { data: receivablesData } = await supabase
-          .from('financeiro')
-          .select('valor_total')
-          .eq('status', 'PENDENTE')
-          .eq('type', 'RECEBER');
-        const { data: payablesData } = await supabase
-          .from('financeiro')
-          .select('valor_total')
-          .eq('status', 'PENDENTE')
-          .in('type', ['PAGAR', 'COMISSAO']);
-        
-        const receivablesTotal = receivablesData?.reduce((sum, item) => sum + (item.valor_total || 0), 0) || 0;
-        const payablesTotal = payablesData?.reduce((sum, item) => sum + (item.valor_total || 0), 0) || 0;
-        
-        setData({ 
-          products: pCount || 0, 
-          customers: cCount || 0, 
-          sales: sData || [], 
-          payments: [], 
-          receivablesTotal: receivablesTotal, 
-          payablesTotal: payablesTotal 
-        });
-      } catch (e) {
-        console.error("Erro na sincronização:", e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  const menuItems = [
-    { to: "/", icon: LayoutDashboard, label: "DASHBOARD" },
-    { to: "/produtos", icon: Box, label: "PRODUTOS" },
-{ to: "/stock", icon: Package, label: "ESTOQUE" },
-{ to: "/customers", icon: Users, label: "CLIENTES" },
-{ to: "/suppliers", icon: Truck, label: "FORNECEDORES" },
-{ to: "/sales", icon: ShoppingCart, label: "VENDAS" },
-{ to: "/invoices", icon: FileText, label: "NOTAS FISCAIS" },
-{ to: "/finance", icon: Wallet, label: "FINANCEIRO" },
-{ to: "/stockhistory", icon: History, label: "HISTÓRICO" },
-{ to: "/settings", icon: Settings, label: "CONFIGURAÇÕES" },
-  ];
+  const [loading] = useState(false);
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#FDFBF7] font-black text-[#d946ef]">INICIALIZANDO VITALLE...</div>;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col md:flex-row font-sans">
-      
-      {/* HEADER MOBILE (3 RISQUINHOS) */}
-      <div className="md:hidden bg-white p-5 border-b border-gray-100 flex justify-between items-center sticky top-0 z-50">
-        <h1 className="text-2xl font-black italic tracking-tighter text-uppercase">VITALLE</h1>
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[#d946ef] p-2 bg-[#d946ef]/5 rounded-[3rem]">
-          {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-        </button>
-      </div>
-
-      {/* SIDEBAR COMPLETA */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out overflow-y-auto
-        ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}
-        md:relative md:translate-x-0 md:flex md:flex-col shrink-0
-      `}>
-        <div className="p-8 hidden md:block">
-          <h1 className="text-3xl font-black italic tracking-tighter text-uppercase">VITALLE</h1>
-          <p className="text-[10px] text-[#d946ef] font-bold tracking-[0.3em]">MANAGEMENT</p>
-        </div>
-        
-        <nav className="flex-1 px-4 space-y-1 flex flex-col">
-          {menuItems.map((item) => (
-            <Link key={item.label} to={item.to} onClick={() => setIsMenuOpen(false)}
-              className="flex items-center space-x-4 p-3.5 text-gray-500 hover:bg-[#d946ef]/10 hover:text-[#d946ef] rounded-2xl transition-all font-black text-[11px] tracking-widest"
-            >
-              <item.icon size={18} />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-6">
-          <SignOutButton>
-            <button className="flex items-center justify-center space-x-3 w-full p-4 bg-red-50 text-red-500 rounded-2xl font-black text-[10px] tracking-widest border border-red-100">
-              <LogOut size={18} />
-              <span>SAIR</span>
-            </button>
-          </SignOutButton>
-        </div>
-      </aside>
-
-      {/* CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 p-6 md:p-12 space-y-10">
-        <header>
-          <div className="flex items-center gap-2 mb-1">
-            {isAdmin && <ShieldCheck size={16} className="text-[#d946ef]" />}
-            <span className="text-[10px] font-black text-[#d946ef] tracking-widest">SISTEMA OFICIALMENTE ONLINE</span>
-          </div>
-          <h2 className="text-3xl md:text-5xl font-black text-black">OLÁ, {NOME_MESTRE}!</h2>
-        </header>
-
-        {/* MÉTRICAS (GRID RESPONSIVA) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { label: "PRODUTOS", val: data.products, icon: Package },
-            { label: "CLIENTES", val: data.customers, icon: Users },
-            { label: "A RECEBER", val: formatCurrency(data.receivablesTotal), icon: Wallet, color: "text-green-600" },
-            { label: "A PAGAR", val: formatCurrency(data.payablesTotal), icon: AlertTriangle, color: "text-red-600" }
-          ].map((item, i) => (
-            <div key={i} className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm">
-              <p className="text-[10px] font-black text-gray-400 tracking-widest mb-2">{item.label}</p>
-              <h3 className={`text-3xl font-black ${item.color || 'text-black'}`}>{item.val}</h3>
-            </div>
-          ))}
-        </div>
-
-        {/* SEÇÃO DE LISTAS (VENDAS E PAGAMENTOS) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-2xl shadow-[#d946ef]/20">
-            <div className="flex items-center gap-3 mb-6">
-              <Wallet className="text-[#d946ef]" />
-              <h3 className="font-black text-lg text-uppercase">CONTAS A RECEBER</h3>
-            </div>
-            <div className="bg-[#d946ef]/5 p-5 rounded-3xl border border-[#d946ef]/10">
-              <p className="text-[10px] font-bold text-[#d946ef] tracking-widest mb-1">Total pendente</p>
-              <p className="text-3xl font-black text-green-600">{formatCurrency(data.receivablesTotal)}</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-[2.5rem] p-8 text-black shadow-2xl shadow-[#d946ef]/20 flex flex-col justify-between min-h-[250px] border border-gray-100">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="text-[#d946ef]" />
-              <h3 className="font-black text-lg text-uppercase">PAGAMENTOS URGENTES</h3>
-            </div>
-            <div className="bg-[#d946ef]/5 p-5 rounded-3xl border border-[#d946ef]/10 mt-4">
-              <p className="text-[10px] font-bold text-[#d946ef] tracking-widest mb-1">Total pendente</p>
-              <p className="text-3xl font-black text-red-600">{formatCurrency(data.payablesTotal)}</p>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* OVERLAY MOBILE */}
-      {isMenuOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden" onClick={() => setIsMenuOpen(false)} />}
+    <div className="h-screen flex items-center justify-center bg-[#FDFBF7]">
+      <h1 className="text-4xl md:text-6xl font-black text-[#d946ef] p-12 text-center tracking-tight">
+        TESTE VITALLE - DASHBOARD OK
+        <br />
+        <span className="text-2xl text-black font-normal mt-4 block">
+          User: {user?.username || 'Carregando...'}
+        </span>
+      </h1>
     </div>
   );
 }
