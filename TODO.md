@@ -1,29 +1,11 @@
-# TODO: Padronização Decimal Financeira
+# TODO: PWA Manual Install Button
 
-## ✅ 1. Criar TODO.md [COMPLETO]
-## ✅ 2. src/lib/formatters.js [COMPLETO]
-## ✅ 3. src/pages/Products.jsx [COMPLETO]
+## Steps:
+- [x] 1. Create src/lib/PWAContext.jsx (PWA context with installPrompt state and promptInstall function)
+- [x] 2. Edit src/App.jsx (wrap Routes with PWAProvider, add beforeinstallprompt listener)
+- [x] 3. Edit src/components/Layout.jsx (add Download button near SignOut using usePWA hook)
+- [x] 4. Build project (npm run build)
+- [x] 5. Test and complete (attempt_completion)
 
-## ✅ 4. entities/Product.json [COMPLETO]
-
-## ⬜ 5. Teste
-- npm run dev
-- Testar form: cost=10.01 → 1001 cents etc.
-
-## ⬜ 3. src/pages/Products.jsx
-- Refatorar useEffect para cents
-- Atualizar handleSave (salvar *_cents)
-- Manter UI inputs como string/number step=0.01
-
-## ⬜ 4. entities/Product.json
-- Adicionar cost_price_cents, sell_price_cents, net_profit_cents: integer
-
-## ⬜ 5. Teste
-- npm run dev
-- Testar form: cost=10.01 → 1001 cents etc.
-
-## ⬜ 6. Secondary files (PurchaseOrder etc.)
-
-## ⬜ 7. Supabase migration
-- ALTER TABLE products ADD COLUMN cost_price_cents bigint;
+Updated: Plan approved by user. Starting step 1.
 
