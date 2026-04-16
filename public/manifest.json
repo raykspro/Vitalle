@@ -5,7 +5,7 @@
   "description": "Sistema de Gestão Vitalle",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "fullscreen",
   "theme_color": "#d946ef",
   "background_color": "#ffffff",
   "icons": [
