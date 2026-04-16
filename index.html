@@ -1,24 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <title>Vitalle</title>
+    
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     
-    <link rel="icon" type="image/png" href="/logo-vitalle.png">
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="/logo-vitalle.png" sizes="512x512">
+    <link rel="apple-touch-icon" href="/logo-vitalle.png" sizes="512x512">
     
-    <link rel="apple-touch-icon" href="/logo-vitalle.png">
-    
+    <!-- PWA Theme Colors -->
     <meta name="theme-color" content="#d946ef">
-    <meta name="background-color" content="#ffffff">
     
+    <!-- Apple PWA Elite Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Vitalle">
+    <meta name="apple-mobile-web-app-status-bar" content="#d946ef">
+    
+    <!-- Additional iOS/Safari -->
+    <meta name="apple-touch-fullscreen" content="yes">
+    
+    <style>
+      /* Hide Safari UI */
+      body { margin: 0; padding: 0; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+

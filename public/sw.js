@@ -1,1 +1,55 @@
-// Vitalle PWA Service Worker\n// Enables install prompt on mobile/PC\n\nconst CACHE_NAME = 'vitalle-v1';\nconst urlsToCache = [\n  '/',\n  '/index.html',\n  '/manifest.json',\n  '/pwa-192x192.png',\n  '/pwa-512x512.png',\n  '/favicon.ico',\n  '/logo-vitalle.png',\n  '/icon.png'\n];\n\nself.addEventListener('install', event => {\n  event.waitUntil(\n    caches.open(CACHE_NAME)\n      .then(cache => cache.addAll(urlsToCache))\n  );\n});\n\nself.addEventListener('activate', event => {\n  event.waitUntil(\n    caches.keys().then(cacheNames => {\n      return Promise.all(\n        cacheNames.map(cacheName => {\n          if (cacheName !== CACHE_NAME) {\n            return caches.delete(cacheName);\n          }\n        })\n      );\n    })\n  );\n});\n\nself.addEventListener('fetch', event => {\n  event.respondWith(\n    caches.match(event.request)\n      .then(response => response || fetch(event.request))\n  );\n});
+// Vitalle PWA Service Worker - Elite Version
+// ✅ self.skipWaiting() & clients.claim() for IMMEDIATE install prompt
+
+const CACHE_NAME = 'vitalle-v2';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/favicon.ico',
+  '/logo-vitalle.png',
+  '/icon.png'
+];
+
+self.addEventListener('install', event => {
+  console.log('Vitalle SW: Installing...');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Vitalle SW: Caching files');
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+self.addEventListener('activate', event => {
+  console.log('Vitalle SW: Activating...');
+  event.waitUntil(
+    Promise.all([
+      // Delete old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('Vitalle SW: Deleting old cache', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // ✅ IMMEDIATE CONTROL - This fixes install prompt!
+      self.clients.claim(),
+      self.skipWaiting()
+    ])
+  );
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
+  );
+});
+

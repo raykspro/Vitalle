@@ -2,7 +2,7 @@
   "id": "vitalle-app",
   "name": "Vitalle",
   "short_name": "Vitalle",
-  "description": "Sistema de Gestão Vitalle",
+  "description": "Sistema de Gestão Vitalle - PWA Elite",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -13,13 +13,26 @@
       "src": "/logo-vitalle.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo-vitalle.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
+
