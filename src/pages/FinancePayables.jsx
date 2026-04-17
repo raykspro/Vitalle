@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DollarSign, AlertCircle, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPriceDisplay, parsePriceToCents, addCents } from '@/lib/formatters';
@@ -20,8 +20,8 @@ const FinancePayables = () => {
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({ description: '', amount: '', due_date: '', status: 'Pendente' });
 
-  const pendingTotal = addCents(...expenses.filter(r => r.status === 'Pendente').map(r => parsePriceToCents(r.amount)));
-  const paidTotal = addCents(...expenses.filter(r => r.status === 'Pago').map(r => parsePriceToCents(r.amount)));
+  const pendingTotal = addCents(...expenses.filter(r => r.status === 'Pendente').map(r => parsePriceToCents(r.amount || '0')));
+  const paidTotal = addCents(...expenses.filter(r => r.status === 'Pago').map(r => parsePriceToCents(r.amount || '0')));
 
   const resetForm = () => {
     setFormData({ description: '', amount: '', due_date: '', status: 'Pendente' });
@@ -45,6 +45,17 @@ const FinancePayables = () => {
       if (res.error) alert(res.error);
     }
     resetForm();
+  };
+
+  const handleEdit = (record) => {
+    setFormData({
+      description: record.description || '',
+      amount: record.amount ? record.amount.toString() : '',
+      due_date: record.due_date ? record.due_date.split('T')[0] : '',
+      status: record.status || 'Pendente'
+    });
+    setEditId(record.id);
+    setShowForm(true);
   };
 
   if (userRole !== 'admin') {
@@ -72,7 +83,7 @@ const FinancePayables = () => {
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Nova Conta a Pagar</DialogTitle>
+              <DialogTitle>{editId ? 'Editar Despesa' : 'Nova Conta a Pagar'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -86,6 +97,13 @@ const FinancePayables = () => {
               <div>
                 <Label>Vencimento</Label>
                 <Input type="date" value={formData.due_date} onChange={e => setFormData({...formData, due_date: e.target.value})} />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl">
+                  <option value="Pendente">Pendente</option>
+                  <option value="Pago">Pago</option>
+                </select>
               </div>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" onClick={resetForm} className="flex-1">Cancelar</Button>
@@ -119,15 +137,17 @@ const FinancePayables = () => {
               <TableHead className="text-xs font-black tracking-widest uppercase text-slate-400">Valor</TableHead>
               <TableHead className="text-xs font-black tracking-widest uppercase text-slate-400">Vencimento</TableHead>
               <TableHead className="text-xs font-black tracking-widest uppercase text-slate-400">Status</TableHead>
+              <TableHead className="w-16">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} className="p-12 text-center text-slate-400 h-32">Carregando...</TableCell>
+                <TableCell colSpan={5} className="p-12 text-center text-slate-400 h-32">Carregando...</TableCell>
+              </TableRow>
             ) : expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="p-20 text-center text-slate-400 italic">Nenhuma conta a pagar encontrada.</TableCell>
+                <TableCell colSpan={5} className="p-20 text-center text-slate-400 italic">Nenhuma conta a pagar encontrada.</TableCell>
               </TableRow>
             ) : (
               expenses.map((record) => (
@@ -143,6 +163,11 @@ const FinancePayables = () => {
                       {record.status}
                     </Badge>
                   </TableCell>
+                  <TableCell className="py-5">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(record)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -154,4 +179,3 @@ const FinancePayables = () => {
 };
 
 export default FinancePayables;
-
