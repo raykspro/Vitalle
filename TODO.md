@@ -1,1 +1,15 @@
-# Vitalle PWA + Vendas Fixes\n\n## Status: ✅ Completed!\n\n### 1. [✅] PWA Service Worker\n   - Created `public/sw.js`\n\n### 2. [✅] Update Sale Schema\n   - Added `commission_value_cents`, `seller_id` to `entities/Sale.json`\n\n### 3. [✅] API Enhancements\n   - Added `createCompleteSale` and updated `registrarComissao` in `src/api/finance.js`\n\n### 4. [✅] Vendas Form Implementation\n   - Full POS form in `src/pages/Vendas.jsx` with customer/product selectors, stock validation, commission/total calcs, complete flow (sale + stock deduct + receivable)\n\n### 5. [ ] Testing\n   - Run `npm run dev`\n   - Test PWA install button (PC: click, Mobile: banner)\n   - Create test sale: verify stock-, sales+, receivable+, commissions\n\n### 6. [ ] Deploy Ready\n   - All green ✅
+# Vitalle Task Tracker
+Status: Active
+
+**Vercel Build Fix:**
+1. [x] Create TODO.md 
+2. [x] Remove useAuth from supabase.js
+3. [x] npm run build SUCCESS
+4. [x] Customers DB SQL generated
+
+**Current: Products Form CSS**
+5. [ ] Update toaster.jsx + toast.jsx (top-right fixed)
+6. [ ] Edit Products.jsx (max-w container + responsive pricing)
+7. [ ] Test npm run dev responsive
+8. [ ] git commit all && push
+9. [ ] Complete
