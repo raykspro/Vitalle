@@ -57,10 +57,12 @@ export default function Products() {
       const sellCents = parsePriceToCents(formData.sell_price);
       const { error } = await supabase.from('products').insert([{
         ...formData,
-        sell_price_cents: sellCents.toString(),
-        cost_price_cents: costCents.toString(),
-        commission_value_cents: metrics.commission_value_cents.toString(),
-        net_profit_cents: metrics.net_profit_cents.toString()
+        price: parseFloat(formData.sell_price) || 0,
+        cost_price: parseFloat(formData.cost_price) || 0,
+        sell_price_cents: Number(sellCents),
+        cost_price_cents: Number(costCents),
+        commission_value_cents: Number(metrics.commission_value_cents),
+        net_profit_cents: Number(metrics.net_profit_cents)
       }]);
 
       if (error) throw error;

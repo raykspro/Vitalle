@@ -1,37 +1,51 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import { DollarSign, AlertCircle } from 'lucide-react';
+import React from 'react';
+import { DollarSign, AlertCircle, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatPriceDisplay, parsePriceToCents, addCents } from '@/lib/formatters';
 import { useUser } from '@clerk/clerk-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useExpenses } from '../hooks/useExpenses.jsx';
 
 const FinancePayables = () => {
   const { user } = useUser();
   const userRole = user?.publicMetadata?.role || 'vendedor';
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { expenses, loading, addExpense, updateExpense } = useExpenses();
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ description: '', amount: '', due_date: '', status: 'Pendente' });
 
-  useEffect(() => {
-    async function fetchPayables() {
-      try {
-        const { data } = await supabase
-          .from('financial_records')
-          .select('*')
-          .eq('type', 'pagar')
-          .or('status.eq.Pendente,status.eq.Pago')
-          .order('due_date', { ascending: true });
-        setRecords(data || []);
-      } catch (error) {
-        console.error('Erro Contas a Pagar:', error);
-      } finally {
-        setLoading(false);
-      }
+  const pendingTotal = addCents(...expenses.filter(r => r.status === 'Pendente').map(r => parsePriceToCents(r.amount)));
+  const paidTotal = addCents(...expenses.filter(r => r.status === 'Pago').map(r => parsePriceToCents(r.amount)));
+
+  const resetForm = () => {
+    setFormData({ description: '', amount: '', due_date: '', status: 'Pendente' });
+    setEditId(null);
+    setShowForm(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const expenseData = {
+      description: formData.description,
+      amount: parseFloat(formData.amount) || 0,
+      due_date: formData.due_date,
+      status: formData.status
+    };
+    if (editId) {
+      const res = await updateExpense(editId, expenseData);
+      if (res.error) alert(res.error);
+    } else {
+      const res = await addExpense(expenseData);
+      if (res.error) alert(res.error);
     }
-    fetchPayables();
-  }, []);
+    resetForm();
+  };
 
   if (userRole !== 'admin') {
     return (
@@ -42,15 +56,44 @@ const FinancePayables = () => {
     );
   }
 
-  const pendingTotal = addCents(...records.filter(r => r.status === 'Pendente').map(r => parsePriceToCents(r.amount)));
-  const paidTotal = addCents(...records.filter(r => r.status === 'Pago').map(r => parsePriceToCents(r.amount)));
-
   return (
     <div className="space-y-8">
-      <header>
-        <div className="h-1.5 w-20 bg-magenta mb-3 rounded-full" />
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Contas a Pagar</h1>
-        <p className="text-slate-500 font-medium italic">Controle de obrigações filtradas por status.</p>
+      <header className="flex justify-between items-center">
+        <div>
+          <div className="h-1.5 w-20 bg-magenta mb-3 rounded-full" />
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Contas a Pagar</h1>
+          <p className="text-slate-500 font-medium italic">Controle de obrigações filtradas por status.</p>
+        </div>
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogTrigger asChild>
+            <Button className="rounded-2xl font-black shadow-lg">
+              <Plus className="mr-2 h-4 w-4" /> Nova Despesa
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Nova Conta a Pagar</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label>Descrição</Label>
+                <Input value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+              </div>
+              <div>
+                <Label>Valor</Label>
+                <Input type="number" step="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} />
+              </div>
+              <div>
+                <Label>Vencimento</Label>
+                <Input type="date" value={formData.due_date} onChange={e => setFormData({...formData, due_date: e.target.value})} />
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={resetForm} className="flex-1">Cancelar</Button>
+                <Button type="submit" className="flex-1 bg-magenta text-white">Salvar</Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -82,13 +125,12 @@ const FinancePayables = () => {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={4} className="p-12 text-center text-slate-400 h-32">Carregando...</TableCell>
-              </TableRow>
-            ) : records.length === 0 ? (
+            ) : expenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="p-20 text-center text-slate-400 italic">Nenhuma conta a pagar encontrada.</TableCell>
               </TableRow>
             ) : (
-              records.map((record) => (
+              expenses.map((record) => (
                 <TableRow key={record.id} className="hover:bg-slate-50/70 border-b border-slate-100">
                   <TableCell className="font-bold text-slate-800 py-5">{record.description}</TableCell>
                   <TableCell className="font-black text-2xl text-magenta py-5">{formatPriceDisplay(parsePriceToCents(record.amount))}</TableCell>
