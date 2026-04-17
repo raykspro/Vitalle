@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabaseClient.js';
-import { useAuth } from '../../lib/AuthContext.jsx'; // Not used here, for hooks
 
 // Customers CRUD
 export async function getCustomers() {
