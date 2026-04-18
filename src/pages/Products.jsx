@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon } from "lucide-react";
+import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   parsePriceToCents,
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [products, setProducts] = useState([]);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -29,10 +31,32 @@ export default function Products() {
 
   const [metrics, setMetrics] = useState({ profit_cents: 0n, margin: 0, commission_value_cents: 0n, net_profit_cents: 0n });
 
+  // FUNÇÃO PARA BUSCAR PRODUTOS
+  async function fetchProducts() {
+    setLoadingProducts(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar:", error);
+      toast.error("Erro ao carregar vitrine");
+    } finally {
+      setLoadingProducts(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   useEffect(() => {
     const costCents = parsePriceToCents(formData.cost_price);
     const sellCents = parsePriceToCents(formData.sell_price);
-    const commPer = parseFloat(formData.commission_percent) || 0;
     
     if (Number(sellCents) > 0) {
       const commValueCents = percentOfCents(sellCents, formData.commission_percent);
@@ -55,6 +79,7 @@ export default function Products() {
     try {
       const costCents = parsePriceToCents(formData.cost_price);
       const sellCents = parsePriceToCents(formData.sell_price);
+      
       const { error } = await supabase.from('products').insert([{
         ...formData,
         price: parseFloat(formData.sell_price) || 0,
@@ -62,18 +87,19 @@ export default function Products() {
         sell_price_cents: Number(sellCents),
         cost_price_cents: Number(costCents),
         commission_value_cents: Number(metrics.commission_value_cents),
-        net_profit_cents: Number(metrics.net_profit_cents)
+        net_profit_cents: Number(metrics.net_profit_cents),
+        stock_quantity: 0
       }]);
 
       if (error) throw error;
 
       toast.success("💎 VITALLE: PEÇA CADASTRADA!", {
         description: `${formData.name} já está no sistema.`,
-        className: "bg-magenta text-white font-black rounded-2xl border-none shadow-2xl",
       });
 
       setShowForm(false);
       setFormData({ name: "", category: "", cost_price: "", sell_price: "", commission_percent: "5", brand: "Vitalle Exclusive", image_url: "", color: "", sku: "", status: "Ativo" });
+      fetchProducts(); // Atualiza a lista após salvar
     } catch (error) {
       toast.error("ERRO NO CADASTRO", { description: error.message });
     } finally {
@@ -82,140 +108,135 @@ export default function Products() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter">VITALLE GESTÃO</h1>
-            <p className="text-[10px] text-slate-500 font-bold tracking-[0.4em] uppercase mt-1">Inventário de Alto Padrão</p>
-          </div>
-          <button 
-            onClick={() => setShowForm(!showForm)} 
-            className={cn(
-              "w-full md:w-auto px-10 py-5 rounded-2xl font-black text-[11px] tracking-[0.3em] transition-all flex items-center justify-center gap-3", 
-              showForm ? "bg-slate-900 text-white shadow-xl" : "bg-magenta text-white shadow-magenta hover:scale-105"
-            )}
-          >
-            {showForm ? <><X className="h-4 w-4" /> CANCELAR</> : <><Plus className="h-4 w-4" /> NOVO PRODUTO</>}
-          </button>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic">VITALLE GESTÃO</h1>
+          <p className="text-[10px] text-slate-500 font-bold tracking-[0.4em] uppercase mt-1">Inventário de Alto Padrão</p>
         </div>
+        <button 
+          onClick={() => setShowForm(!showForm)} 
+          className={cn(
+            "w-full md:w-auto px-10 py-5 rounded-2xl font-black text-[11px] tracking-[0.3em] transition-all flex items-center justify-center gap-3", 
+            showForm ? "bg-slate-900 text-white shadow-xl" : "bg-magenta text-white shadow-lg hover:scale-105"
+          )}
+        >
+          {showForm ? <><X className="h-4 w-4" /> CANCELAR</> : <><Plus className="h-4 w-4" /> NOVO PRODUTO</>}
+        </button>
+      </header>
 
-        {showForm && (
-          <form onSubmit={handleSave} className="mx-auto max-w-4xl bg-white rounded-[2.5rem] p-6 lg:p-12 border border-slate-200 shadow-2xl space-y-10">
-            
-            <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
-              
-              {/* COLUNA 1: IDENTIDADE */}
-              <div className="space-y-6 lg:min-w-[280px]">
-                <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
-                  <Tag className="h-4 w-4" /> Identidade da Peça
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="group">
-                    <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Nome do Produto</label>
-                    <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="input-vitalle w-full" placeholder="Ex: Conjunto Seda Italiana" />
-                  </div>
-
-                  <div className="group">
-                    <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Marca / Grife</label>
-                    <input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="input-vitalle w-full" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">SKU / Ref</label>
-                      <input type="text" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} className="input-vitalle w-full" placeholder="VT-001" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Cor</label>
-                      <input type="text" value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="input-vitalle w-full" placeholder="Preto Luxo" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* COLUNA 2: MÍDIA E CATEGORIA */}
-              <div className="space-y-6 lg:min-w-[280px]">
-                <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" /> Visual & Categoria
-                </h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Link da Foto (URL)</label>
-                    <input type="text" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="input-vitalle w-full" placeholder="https://..." />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-1">Categoria</label>
-                    <input type="text" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="input-vitalle w-full" placeholder="Lingerie" />
-                  </div>
-                </div>
-              </div>
-
-              {/* COLUNA 3: FINANCEIRO */}
-              <div className="bg-slate-50 rounded-[2rem] p-4 sm:p-6 lg:p-8 border-2 border-magenta/5 space-y-6 min-w-[300px]">
-                <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" /> Precificação
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <label className="text-[9px] font-black text-slate-400 uppercase">Custo Unitário</label>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-400">R$</span>
-                      <input required type="number" step="0.01" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="w-full border-none p-0 text-lg font-black outline-none focus:ring-0" />
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-4 rounded-2xl shadow-md border-2 border-magenta/20">
-                    <label className="text-[9px] font-black text-magenta uppercase">Preço de Venda</label>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-magenta">R$</span>
-                      <input required type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="w-full border-none p-0 text-lg font-black text-magenta outline-none focus:ring-0" />
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <label className="text-[9px] font-black text-blue-500 uppercase">Comissão (%)</label>
-                    <input type="number" value={formData.commission_percent} onChange={e => setFormData({...formData, commission_percent: e.target.value})} className="w-full border-none p-0 text-lg font-black text-blue-500 outline-none focus:ring-0" />
-                  </div>
+      {showForm && (
+        <form onSubmit={handleSave} className="mx-auto max-w-4xl bg-white rounded-[2.5rem] p-6 lg:p-12 border border-slate-200 shadow-2xl space-y-10 animate-in zoom-in-95 duration-300">
+          <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
+            {/* COLUNA 1: IDENTIDADE */}
+            <div className="space-y-6">
+              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
+                <Tag className="h-4 w-4" /> Identidade da Peça
+              </h3>
+              <div className="space-y-4">
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="input-vitalle w-full" placeholder="Nome do Produto" />
+                <input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="input-vitalle w-full" placeholder="Marca" />
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="text" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} className="input-vitalle w-full" placeholder="SKU" />
+                  <input type="text" value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="input-vitalle w-full" placeholder="Cor" />
                 </div>
               </div>
             </div>
 
-            {/* PAINEL DE PERFORMANCE */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-900 p-8 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-magenta/20 blur-[80px] rounded-full" />
-              
-              <div className="space-y-1 relative z-10 border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0">
-                <span className="text-[9px] font-black tracking-[0.2em] text-magenta uppercase">Lucro Líquido Real</span>
-                <p className="text-3xl font-black italic text-green-400">{formatPriceDisplay(metrics.net_profit_cents)}</p>
-              </div>
-
-              <div className="space-y-1 relative z-10 border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0 md:px-6">
-                <span className="text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase">Margem de Lucro</span>
-                <p className={cn("text-3xl font-black italic", metrics.margin < 30 ? "text-rose-500" : "text-white")}>
-                  {metrics.margin.toFixed(1)}%
-                </p>
-              </div>
-
-              <div className="space-y-1 relative z-10 md:pl-6">
-                <span className="text-[9px] font-black tracking-[0.2em] text-blue-400 uppercase">Valor p/ Vendedor</span>
-                <p className="text-3xl font-black italic">{formatPriceDisplay(metrics.commission_value_cents)}</p>
+            {/* COLUNA 2: MÍDIA */}
+            <div className="space-y-6">
+              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" /> Visual & Categoria
+              </h3>
+              <div className="space-y-4">
+                <input type="text" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="input-vitalle w-full" placeholder="URL da Imagem" />
+                <input type="text" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="input-vitalle w-full" placeholder="Categoria" />
               </div>
             </div>
 
-            <div className="flex justify-center md:justify-end">
-              <button 
-                disabled={loading} 
-                type="submit" 
-                className="btn-vitalle w-full md:w-auto flex items-center justify-center gap-4"
-              >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "REGISTRAR PEÇA NA VITALLE"}
+            {/* COLUNA 3: FINANCEIRO */}
+            <div className="bg-slate-50 rounded-[2rem] p-6 border-2 border-magenta/5 space-y-6">
+              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
+                <DollarSign className="h-4 w-4" /> Precificação
+              </h3>
+              <div className="space-y-4">
+                <div className="bg-white p-3 rounded-xl shadow-sm">
+                  <label className="text-[9px] font-black text-slate-400 uppercase">Custo R$</label>
+                  <input required type="number" step="0.01" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="w-full border-none p-0 font-black outline-none" />
+                </div>
+                <div className="bg-white p-3 rounded-xl shadow-md border-2 border-magenta/20">
+                  <label className="text-[9px] font-black text-magenta uppercase">Venda R$</label>
+                  <input required type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="w-full border-none p-0 font-black text-magenta outline-none" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* PAINEL DE PERFORMANCE */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-900 p-8 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-magenta/20 blur-[80px] rounded-full" />
+            <div className="relative z-10">
+              <span className="text-[9px] font-black text-magenta uppercase">Lucro Líquido</span>
+              <p className="text-3xl font-black italic text-green-400">{formatPriceDisplay(metrics.net_profit_cents)}</p>
+            </div>
+            <div className="relative z-10">
+              <span className="text-[9px] font-black text-slate-400 uppercase">Margem</span>
+              <p className={cn("text-3xl font-black italic", metrics.margin < 30 ? "text-rose-500" : "text-white")}>{metrics.margin.toFixed(1)}%</p>
+            </div>
+            <div className="relative z-10 text-right">
+              <button disabled={loading} type="submit" className="btn-vitalle w-full flex items-center justify-center gap-4">
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "REGISTRAR PEÇA"}
               </button>
             </div>
-          </form>
+          </div>
+        </form>
+      )}
+
+      {/* GALERIA DE PEÇAS VITALLE (Sempre visível) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        {loadingProducts ? (
+          <div className="col-span-full py-20 text-center animate-pulse font-black text-slate-300 uppercase tracking-[0.5em]">
+            Sincronizando Coleção...
+          </div>
+        ) : products.length === 0 ? (
+          <div className="col-span-full py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+            <p className="text-slate-400 italic font-medium">Nenhuma peça na vitrine virtual.</p>
+          </div>
+        ) : (
+          products.map((item) => (
+            <div key={item.id} className="group bg-white rounded-[2rem] overflow-hidden shadow-xl hover:shadow-2xl transition-all border border-slate-100 relative">
+              <div className="absolute top-4 left-4 z-10">
+              <span className="bg-magenta/90 backdrop-blur-md text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                  {item?.category || 'Peça Luxo'}
+                </span>
+              </div>
+
+              <div className="aspect-[3/4] overflow-hidden bg-slate-100">
+                {item?.image_url ? (
+                  <img src={item.image_url} alt={item?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    <ImageIcon className="h-12 w-12" />
+                  </div>
+                )}
+              </div>
+
+              <div className="p-6 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-black text-slate-900 uppercase text-sm leading-tight">{item.name}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">{item.brand}</p>
+                  </div>
+                  <p className="font-black text-magenta italic">{formatPriceDisplay(item.sell_price_cents)}</p>
+                </div>
+                
+                <div className="pt-3 border-t border-slate-50 flex justify-between items-center text-[10px] font-black uppercase">
+                  <span className="text-slate-400">Estoque: <span className="text-slate-900">{item.stock_quantity || 0} un</span></span>
+                  <button className="text-blue-500 hover:text-magenta transition-colors"><Edit3 className="h-4 w-4"/></button>
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

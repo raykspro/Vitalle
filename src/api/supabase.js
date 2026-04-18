@@ -5,8 +5,8 @@ export async function getCustomers() {
   try {
     const { data, error } = await supabase
       .from('customers')
-      .select('*')
-      .order('name', { ascending: true });
+      .select('*, sales(*)')
+      .order('created_at', { ascending: false });
     if (error) throw error;
     return { data, error: null };
   } catch (error) {
@@ -51,8 +51,8 @@ export async function getProducts() {
   try {
     const { data, error } = await supabase
       .from('products')
-      .select('*')
-      .order('name', { ascending: true });
+      .select('*, stock_items(*)')
+      .order('created_at', { ascending: false });
     if (error) throw error;
     return { data, error: null };
   } catch (error) {
@@ -97,8 +97,8 @@ export async function getSuppliers() {
   try {
     const { data, error } = await supabase
       .from('suppliers')
-      .select('*')
-      .order('name', { ascending: true });
+      .select('*, purchase_orders(*)')
+      .order('created_at', { ascending: false });
     if (error) throw error;
     return { data, error: null };
   } catch (error) {

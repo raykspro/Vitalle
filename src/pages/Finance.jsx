@@ -20,8 +20,8 @@ const Finance = () => {
     async function fetchFinance() {
       try {
         const { data, error } = await supabase
-          .from('financial_records') // Substitua pelo nome real da sua tabela
-          .select('*')
+          .from('financial_records')
+          .select('*, suppliers(name), customers(name)')
           .order('due_date', { ascending: true });
 
         if (error) throw error;

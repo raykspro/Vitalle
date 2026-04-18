@@ -44,9 +44,9 @@ const Vendas = () => {
       const [custs, prods, salesRes, invoicesRes, commRes] = await Promise.all([
         cline.entities.Customer.list(),
         cline.entities.Product.list(),
-        supabase.from('sales').select('*', { count: 'exact', head: true }),
+        supabase.from('sales').select('*, customers(name), products(name, price)', { count: 'exact', head: true }),
         supabase.from('invoices').select('*', { count: 'exact', head: true }),
-        supabase.from('sales').select('commission_value_cents').eq('status', 'Concluída')
+        supabase.from('sales').select('*, customers(name), products(name, price)').eq('status', 'Concluída')
       ]);
       setCustomers(custs || []);
       setProducts(prods || []);

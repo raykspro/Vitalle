@@ -1,187 +1,237 @@
 import React, { useState, useEffect } from "react";
-import { ShoppingBag, Save, Plus, Trash2, Loader2, Calendar, Truck, ArrowLeftRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
-  parsePriceToCents,
-  formatPriceDisplay
-} from "@/lib/formatters";
+import { Plus, X, Loader2, ShoppingBag, Truck, Calendar, DollarSign } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import { formatPriceDisplay, parsePriceToCents } from "@/lib/formatters";
+import { toast } from "sonner";
 
 export default function PurchaseOrder() {
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [products, setProducts] = useState([]);
-  const [supplier, setSupplier] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  
-  // Itens da Ordem de Compra
-  const [items, setItems] = useState([
-    { product_id: "", color: "", size: "", quantity: "", cost_price: "" }
-  ]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+
+  const [formData, setFormData] = useState({
+    product_id: "",
+    supplier_id: "",
+    quantity: "",
+    unit_cost: "",
+    status: "Pendente",
+    expected_at: ""
+  });
+
+  // 1. CARREGAR DADOS PARA CONECTAR OS CAMINHOS
+  async function loadInitialData() {
+    setLoadingData(true);
+    try {
+      const [prodRes, suppRes, orderRes] = await Promise.all([
+        supabase.from('products').select('id, name, brand, cost_price_cents'),
+        supabase.from('suppliers').select('id, name'),
+        supabase.from('purchase_orders').select(`
+          *,
+          products (name, brand),
+          suppliers (name)
+        `).order('created_at', { ascending: false })
+      ]);
+
+      if (prodRes.error) throw prodRes.error;
+      if (suppRes.error) throw suppRes.error;
+      if (orderRes.error) throw orderRes.error;
+
+      setProducts(prodRes.data || []);
+      setSuppliers(suppRes.data || []);
+      setOrders(orderRes.data || []);
+    } catch (error) {
+      console.error("Erro na conexão:", error);
+      toast.error("Erro ao conectar caminhos de dados");
+    } finally {
+      setLoadingData(false);
+    }
+  }
 
   useEffect(() => {
-    async function getProducts() {
-      const { data } = await supabase.from('products').select('id, name');
-      setProducts(data || []);
-    }
-    getProducts();
+    loadInitialData();
   }, []);
 
-  const addItem = () => {
-    setItems([...items, { product_id: "", color: "", size: "", quantity: 0, cost_price: 0 }]);
-  };
-
-  const removeItem = (index) => {
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
-  };
-
-  const updateItem = (index, field, value) => {
-    const newItems = [...items];
-    newItems[index][field] = value;
-    setItems(newItems);
-  };
-
-  const calculateTotal = () => {
-    return formatPriceDisplay(addCents(...items.map(item => {
-      const qty = Number(item.quantity) || 0;
-      const costCents = parsePriceToCents(item.cost_price);
-      return BigInt(Math.round(qty)) * costCents;
-    })));
-  };
-
+  // 2. SALVAR ORDEM E ATUALIZAR ESTOQUE
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // 1. LANÇAMENTO NO FINANCEIRO (Contas a Pagar)
-      const { error: finError } = await supabase.from('financial_records').insert([{
-        description: `Ordem de Compra: ${supplier}`,
-        amount: calculateTotal(),
-        due_date: dueDate,
-        status: 'Pendente',
-        type: 'Despesa'
-      }]);
-      if (finError) throw finError;
+      const costCents = parsePriceToCents(formData.unit_cost);
+      const qty = parseInt(formData.quantity);
 
-      // 2. ATUALIZAÇÃO DO ESTOQUE (Loop por item)
-      for (const item of items) {
-        const { error: invError } = await supabase.from('inventory').insert([{
-          product_id: item.product_id,
-          color: item.color,
-          size: item.size,
-          quantity: item.quantity
-        }]);
-        if (invError) throw invError;
+      // Inserir a Ordem
+      const { error: orderError } = await supabase.from('purchase_orders').insert([{
+        product_id: formData.product_id,
+        supplier_id: formData.supplier_id,
+        quantity: qty,
+        unit_cost_cents: Number(costCents),
+        total_cost_cents: Number(costCents) * qty,
+        status: formData.status,
+        expected_at: formData.expected_at
+      }]);
+
+      if (orderError) throw orderError;
+
+      // SE O STATUS FOR 'RECEBIDO', JÁ ATUALIZA O ESTOQUE DO PRODUTO
+      if (formData.status === "Recebido") {
+        const { data: currentProd } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', formData.product_id)
+          .single();
+
+        const newQty = (currentProd?.stock_quantity || 0) + qty;
+
+        await supabase
+          .from('products')
+          .update({ stock_quantity: newQty })
+          .eq('id', formData.product_id);
       }
 
-      alert("ORDEM DE COMPRA FINALIZADA COM SUCESSO! 💎 Estoque e Financeiro atualizados.");
-      setItems([{ product_id: "", color: "", size: "", quantity: 0, cost_price: 0 }]);
-      setSupplier("");
-      setDueDate("");
-      
-    } catch (err) {
-      alert("Erro ao processar ordem: " + err.message);
+      toast.success("ORDEM REGISTRADA COM SUCESSO!");
+      setShowForm(false);
+      loadInitialData();
+    } catch (error) {
+      toast.error("Erro ao processar ordem");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <header className="flex flex-col gap-2">
-        <div className="h-1.5 w-16 bg-magenta rounded-full" />
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Ordem de Compra</h1>
-        <p className="text-slate-500 font-medium italic">Substituição de Notas Fiscais e Entrada de Estoque.</p>
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <header className="flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic">ORDENS DE COMPRA</h1>
+          <p className="text-[10px] text-slate-500 font-bold tracking-[0.4em] uppercase">Entrada de Mercadoria Vitalle</p>
+        </div>
+        <button 
+          onClick={() => setShowForm(!showForm)}
+          className="bg-magenta text-white px-8 py-4 rounded-2xl font-black text-[11px] tracking-widest shadow-lg hover:scale-105 transition-all"
+        >
+          {showForm ? "CANCELAR" : "NOVA ENTRADA"}
+        </button>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Cabeçalho da Ordem */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 grid md:grid-cols-2 gap-8">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-2">Fornecedor</label>
-            <input 
-              required
-              value={supplier}
-              onChange={e => setSupplier(e.target.value)}
-              placeholder="Digite o nome do fornecedor..." 
-              className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-magenta/30" 
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-magenta tracking-widest uppercase ml-2 italic">Data de Vencimento (Boleto)</label>
-            <input 
-              required
-              type="date"
-              value={dueDate}
-              onChange={e => setDueDate(e.target.value)}
-              className="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold text-slate-500" 
-            />
-          </div>
-        </div>
-
-        {/* Lista de Itens */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xs font-black text-slate-900 tracking-[0.2em] uppercase flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4 text-magenta" /> Itens da Grade
-            </h2>
-            <p className="text-[10px] font-black text-slate-400">TOTAL DA ORDEM: <span className="text-slate-900">{calculateTotal()}</span></p>
-          </div>
-
-          {items.map((item, index) => (
-            <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end bg-slate-50 p-6 rounded-3xl animate-in slide-in-from-right-2">
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Modelo</label>
-                <select 
-                  required
-                  className="w-full bg-white border-none rounded-xl p-3 text-xs font-bold"
-                  onChange={e => updateItem(index, 'product_id', e.target.value)}
-                >
-                  <option value="">Selecione...</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Cor</label>
-                <input placeholder="Ex: Pink" className="w-full bg-white border-none rounded-xl p-3 text-xs font-bold" onChange={e => updateItem(index, 'color', e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Tamanho</label>
-                <input placeholder="Ex: M" className="w-full bg-white border-none rounded-xl p-3 text-xs font-bold" onChange={e => updateItem(index, 'size', e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Qtd / Custo</label>
-                <div className="flex gap-1">
-                  <input type="number" placeholder="Qtd" className="w-1/2 bg-white border-none rounded-xl p-3 text-xs font-bold" onChange={e => updateItem(index, 'quantity', e.target.value)} />
-                  <input type="number" step="0.01" placeholder="R$" className="w-1/2 bg-white border-none rounded-xl p-3 text-xs font-bold" onChange={e => updateItem(index, 'cost_price', e.target.value)} />
-                </div>
-              </div>
-              <button type="button" onClick={() => removeItem(index)} className="p-3 text-slate-300 hover:text-red-500 transition-colors">
-                <Trash2 className="h-5 w-5" />
-              </button>
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-2xl space-y-6 animate-in slide-in-from-top-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* PRODUTO */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Peça Vitalle</label>
+              <select 
+                required
+                className="input-vitalle w-full appearance-none"
+                value={formData.product_id}
+                onChange={e => setFormData({...formData, product_id: e.target.value})}
+              >
+                <option value="">Escolha a peça...</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.brand})</option>
+                ))}
+              </select>
             </div>
-          ))}
 
-          <button 
-            type="button" 
-            onClick={addItem}
-            className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-[10px] font-black text-slate-400 tracking-widest uppercase hover:border-magenta hover:text-magenta transition-all"
-          >
-            + Adicionar novo item na grade
-          </button>
-        </div>
+            {/* FORNECEDOR */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fornecedor</label>
+              <select 
+                required
+                className="input-vitalle w-full"
+                value={formData.supplier_id}
+                onChange={e => setFormData({...formData, supplier_id: e.target.value})}
+              >
+                <option value="">Escolha o fornecedor...</option>
+                {suppliers.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
 
-        <div className="flex justify-end">
-          <button 
-            disabled={loading}
-            className="bg-slate-900 text-white px-16 py-5 rounded-2xl font-black text-[10px] tracking-[0.3em] hover:bg-magenta transition-all shadow-xl flex items-center gap-3"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {loading ? "PROCESSANDO..." : "CONCLUIR E LANÇAR NO FINANCEIRO"}
+            {/* QUANTIDADE */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Quantidade</label>
+              <input 
+                type="number" required className="input-vitalle w-full"
+                value={formData.quantity}
+                onChange={e => setFormData({...formData, quantity: e.target.value})}
+              />
+            </div>
+
+            {/* CUSTO UNITÁRIO */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Custo Unit. (R$)</label>
+              <input 
+                type="number" step="0.01" required className="input-vitalle w-full"
+                value={formData.unit_cost}
+                onChange={e => setFormData({...formData, unit_cost: e.target.value})}
+              />
+            </div>
+
+            {/* STATUS */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status da Ordem</label>
+              <select 
+                className="input-vitalle w-full"
+                value={formData.status}
+                onChange={e => setFormData({...formData, status: e.target.value})}
+              >
+                <option value="Pendente">Pendente</option>
+                <option value="Em Trânsito">Em Trânsito</option>
+                <option value="Recebido">Recebido (Soma no Estoque)</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} className="btn-vitalle w-full">
+            {loading ? "PROCESSANDO..." : "CONFIRMAR ENTRADA DE ESTOQUE"}
           </button>
-        </div>
-      </form>
+        </form>
+      )}
+
+      {/* LISTA DE ORDENS */}
+      <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-100">
+              <th className="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Produto / Fornecedor</th>
+              <th className="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Qtd</th>
+              <th className="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Total</th>
+              <th className="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {loadingData ? (
+              <tr><td colSpan="4" className="p-20 text-center font-black text-slate-300">SINCRONIZANDO FLUXO...</td></tr>
+            ) : orders.length === 0 ? (
+              <tr><td colSpan="4" className="p-20 text-center text-slate-400 italic">Nenhuma ordem de compra ativa.</td></tr>
+            ) : (
+              orders.map(order => (
+                <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="p-6">
+                    <div className="font-bold text-slate-900 uppercase text-sm">{order.products?.name}</div>
+                    <div className="text-[10px] text-slate-400 font-bold">{order.suppliers?.name}</div>
+                  </td>
+                  <td className="p-6 font-mono text-sm">{order.quantity} un</td>
+                  <td className="p-6 font-black text-magenta">{formatPriceDisplay(order.total_cost_cents)}</td>
+                  <td className="p-6">
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter",
+                      order.status === 'Recebido' ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
+                    )}>
+                      {order.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

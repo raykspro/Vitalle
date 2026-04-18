@@ -14,24 +14,24 @@ const FinanceReceivables = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchReceivables() {
-      try {
-        const { data } = await supabase
-          .from('financial_records')
-          .select('*')
-          .eq('type', 'receber')
-          .or('status.eq.Pendente,status.eq.Pago')
-          .order('due_date', { ascending: true });
-        setRecords(data || []);
-      } catch (error) {
-        console.error('Erro Contas a Receber:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchReceivables();
-  }, []);
+      useEffect(() => {
+        async function fetchReceivables() {
+          try {
+            const { data } = await supabase
+              .from('financial_records')
+              .select('*, customers(name)')
+              .eq('type', 'receber')
+              .or('status.eq.Pendente,status.eq.Pago')
+              .order('due_date', { ascending: true });
+            setRecords(data || []);
+          } catch (error) {
+            console.error('Erro Contas a Receber:', error);
+          } finally {
+            setLoading(false);
+          }
+        }
+        fetchReceivables();
+      }, []);
 
   if (userRole !== 'admin') {
     return (

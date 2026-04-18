@@ -143,7 +143,9 @@ const FinancePayables = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="p-12 text-center text-slate-400 h-32">Carregando...</TableCell>
+                <TableCell colSpan={5} className="p-12 text-center text-slate-400 h-32">
+                  <Skeleton className="h-32 w-full mx-auto" />
+                </TableCell>
               </TableRow>
             ) : expenses.length === 0 ? (
               <TableRow>
@@ -151,16 +153,16 @@ const FinancePayables = () => {
               </TableRow>
             ) : (
               expenses.map((record) => (
-                <TableRow key={record.id} className="hover:bg-slate-50/70 border-b border-slate-100">
-                  <TableCell className="font-bold text-slate-800 py-5">{record.description}</TableCell>
-                  <TableCell className="font-black text-2xl text-magenta py-5">{formatPriceDisplay(parsePriceToCents(record.amount))}</TableCell>
-                  <TableCell className="font-medium text-slate-600 py-5">{new Date(record.due_date).toLocaleDateString('pt-BR')}</TableCell>
+                <TableRow key={record?.id} className="hover:bg-slate-50/70 border-b border-slate-100">
+                  <TableCell className="font-bold text-slate-800 py-5">{record?.description || 'N/A'}</TableCell>
+                  <TableCell className="font-black text-2xl text-magenta py-5">{formatPriceDisplay(parsePriceToCents(record?.amount || '0'))}</TableCell>
+                  <TableCell className="font-medium text-slate-600 py-5">{record?.due_date ? new Date(record.due_date).toLocaleDateString('pt-BR') : 'N/A'}</TableCell>
                   <TableCell className="py-5">
-                    <Badge variant={record.status === 'Pago' ? "default" : "secondary"} className={cn(
+                    <Badge variant={record?.status === 'Pago' ? "default" : "secondary"} className={cn(
                       "font-black tracking-widest px-4 py-1.5 text-xs uppercase",
-                      record.status === 'Pago' ? "bg-green-500 hover:bg-green-500" : "bg-magenta/20 text-magenta border-magenta/30"
+                      record?.status === 'Pago' ? "bg-green-500 hover:bg-green-500" : "bg-magenta/20 text-magenta border-magenta/30"
                     )}>
-                      {record.status}
+                      {record?.status || 'N/A'}
                     </Badge>
                   </TableCell>
                   <TableCell className="py-5">
