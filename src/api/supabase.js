@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient.js';
 
-// Customers CRUD
+// --- CUSTOMERS (CLIENTES) ---
 export async function getCustomers() {
   try {
     const { data, error } = await supabase
@@ -46,7 +46,53 @@ export async function updateCustomer(id, updates) {
   }
 }
 
-// Suppliers CRUD
+// --- PRODUCTS (PRODUTOS) ---
+export async function getProducts() {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('name', { ascending: true });
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Erro ao listar produtos:', error);
+    return { data: [], error: 'Erro ao carregar produtos' };
+  }
+}
+
+export async function addProduct(product) {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([product])
+      .select()
+      .single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Erro ao adicionar produto:', error);
+    return { data: null, error: 'Erro ao adicionar produto' };
+  }
+}
+
+export async function updateProduct(id, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Erro ao atualizar produto:', error);
+    return { data: null, error: 'Erro ao atualizar produto' };
+  }
+}
+
+// --- SUPPLIERS (FORNECEDORES) ---
 export async function getSuppliers() {
   try {
     const { data, error } = await supabase
@@ -92,7 +138,7 @@ export async function updateSupplier(id, updates) {
   }
 }
 
-// Expenses CRUD (contas a pagar/pagas)
+// --- EXPENSES (DESPESAS) ---
 export async function getExpenses() {
   try {
     const { data, error } = await supabase
@@ -138,17 +184,17 @@ export async function updateExpense(id, updates) {
   }
 }
 
-// Robust createSale with sale_items
+// --- SALES (VENDAS) ---
 export async function createSale(saleData, seller_id) {
   try {
-    // Sale data without items
     const salePayload = {
       ...saleData,
       seller_id,
       sale_date: new Date().toISOString(),
       status: 'Concluída'
     };
-    delete salePayload.items; // items separate
+    const itemsToInsert = salePayload.items;
+    delete salePayload.items;
 
     const { data: sale, error: saleError } = await supabase
       .from('sales')
@@ -157,8 +203,7 @@ export async function createSale(saleData, seller_id) {
       .single();
     if (saleError) throw saleError;
 
-    // Insert sale_items
-    const itemsPayload = saleData.items.map(item => ({
+    const itemsPayload = itemsToInsert.map(item => ({
       sale_id: sale.id,
       product_id: item.product_id,
       product_name: item.product_name,
@@ -173,8 +218,8 @@ export async function createSale(saleData, seller_id) {
       .from('sale_items')
       .insert(itemsPayload)
       .select();
+    
     if (itemsError) {
-      // Cleanup sale if items fail
       await supabase.from('sales').delete().eq('id', sale.id);
       throw itemsError;
     }
@@ -182,13 +227,10 @@ export async function createSale(saleData, seller_id) {
     return { data: { sale, items }, error: null };
   } catch (error) {
     console.error('Erro ao criar venda:', error);
-    const errorMsg = error.message.toLowerCase().includes('stock') || 
-                     error.message.toLowerCase().includes('estoque') || 
-                     error.message.toLowerCase().includes('insufficient') ||
-                     error.code === 'P0001' 
-      ? 'Estoque insuficiente para um ou mais itens. Verifique a disponibilidade.' 
+    const msg = error.message?.toLowerCase() || '';
+    const errorMsg = (msg.includes('stock') || msg.includes('estoque') || error.code === 'P0001')
+      ? 'Estoque insuficiente para um ou mais itens.'
       : 'Erro ao criar venda';
     return { data: null, error: errorMsg };
   }
 }
-
