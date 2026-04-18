@@ -11,10 +11,10 @@ const Clientes = () => {
   const { customers, loading, addCustomer, updateCustomer } = useCustomers();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', cpf: '', address: '', city: '', state: '', notes: '' });
+const [formData, setFormData] = useState({ name: '', email: '', cpf: '', address: '', city: '', state: '', observations: '' });
 
   const resetForm = () => {
-    setFormData({ name: '', phone: '', email: '', cpf: '', address: '', city: '', state: '', notes: '' });
+    setFormData({ name: '', email: '', cpf: '', address: '', city: '', state: '', observations: '' });
     setEditId(null);
     setShowForm(false);
   };
@@ -34,13 +34,12 @@ const Clientes = () => {
   const handleEdit = (cliente) => {
     setFormData({
       name: cliente.name || '',
-      phone: cliente.phone || '',
       email: cliente.email || '',
       cpf: cliente.cpf || '',
       address: cliente.address || '',
       city: cliente.city || '',
       state: cliente.state || '',
-      notes: cliente.notes || ''
+      observations: cliente.observations || ''
     });
     setEditId(cliente.id);
     setShowForm(true);
@@ -60,7 +59,7 @@ const Clientes = () => {
               <UserPlus className="mr-2 h-4 w-4" /> Novo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl p-0 rounded-3xl">
+          <DialogContent className="max-w-2xl p-0 rounded-3xl bg-white z-[9999] shadow-2xl">
             <DialogHeader className="p-8 pb-6">
               <DialogTitle className="text-2xl font-black">
                 {editId ? 'Editar Cliente' : 'Novo Cliente'}
@@ -74,13 +73,8 @@ const Clientes = () => {
                   </Label>
                   <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="h-12" />
                 </div>
-                <div>
-                  <Label className="text-sm font-black uppercase mb-2 flex items-center gap-2">
-                    <Phone className="h-4 w-4" /> Telefone
-                  </Label>
-                  <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="h-12" />
-                </div>
-                <div>
+
+                <div className="md:col-span-2">
                   <Label className="text-sm font-black uppercase mb-2 flex items-center gap-2">
                     <Mail className="h-4 w-4" /> E-mail
                   </Label>
@@ -109,7 +103,7 @@ const Clientes = () => {
               </div>
               <div>
                 <Label className="text-sm font-black uppercase mb-2">Observações</Label>
-                <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full h-24 p-4 border border-slate-200 rounded-2xl resize-vertical" />
+<textarea value={formData.observations} onChange={e => setFormData({...formData, observations: e.target.value})} className="w-full h-24 p-4 border border-slate-200 rounded-2xl resize-vertical" />
               </div>
               <div className="flex gap-4">
                 <Button type="button" variant="outline" onClick={resetForm} className="flex-1 h-14 font-black rounded-2xl">
