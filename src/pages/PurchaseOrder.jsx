@@ -28,22 +28,24 @@ export default function PurchaseOrder() {
       const [prodRes, suppRes, orderRes] = await Promise.all([
         supabase.from('products').select('id, name, brand, cost_price_cents'),
         supabase.from('suppliers').select('id, name'),
-        supabase.from('purchase_orders').select(`
-          *,
-          products (name, brand),
-          suppliers (name)
-        `).order('created_at', { ascending: false })
+        supabase.from('purchase_orders').select('*, products(name), suppliers(name)').order('created_at', { ascending: false })
       ]);
 
-      if (prodRes.error) throw prodRes.error;
-      if (suppRes.error) throw suppRes.error;
-      if (orderRes.error) throw orderRes.error;
+      if (prodRes.error) {
+        console.log('Erro products:', prodRes.error);
+      }
+      if (suppRes.error) {
+        console.log('Erro suppliers:', suppRes.error);
+      }
+      if (orderRes.error) {
+        console.log('Erro purchase_orders:', orderRes.error);
+      }
 
       setProducts(prodRes.data || []);
       setSuppliers(suppRes.data || []);
       setOrders(orderRes.data || []);
     } catch (error) {
-      console.error("Erro na conexão:", error);
+      console.log('Erro detalhado:', error);
       toast.error("Erro ao conectar caminhos de dados");
     } finally {
       setLoadingData(false);
@@ -213,8 +215,8 @@ export default function PurchaseOrder() {
               orders.map(order => (
                 <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="p-6">
-                    <div className="font-bold text-slate-900 uppercase text-sm">{order.products?.name}</div>
-                    <div className="text-[10px] text-slate-400 font-bold">{order.suppliers?.name}</div>
+                <div className="font-bold text-slate-900 uppercase text-sm">{order.products?.name || 'N/A'}</div>
+                    <div className="text-[10px] text-slate-400 font-bold">{order.suppliers?.name || 'N/A'}</div>
                   </td>
                   <td className="p-6 font-mono text-sm">{order.quantity} un</td>
                   <td className="p-6 font-black text-magenta">{formatPriceDisplay(order.total_cost_cents)}</td>

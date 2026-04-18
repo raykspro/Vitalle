@@ -27,16 +27,17 @@ export default function Stock() {
     const controller = new AbortController();
     loadData(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
-  }, []);
+  }, []); // Re-run on tab focus via parent key or useVisibilityObserver if needed
 
   async function loadData(signal) {
     try {
-      const [items, prods] = await Promise.all([
+      const [items, prodsRes] = await Promise.all([
         cline.entities.StockItem.list("-created_date", 500, { signal }),
-        cline.entities.Product.list("-created_date", 200, { signal }),
+        supabase.from('products').select('*').order('created_at', { ascending: false }),
       ]);
+      const prods = prodsRes.data || [];
       setStockItems(items || []);
-      setProducts(prods || []);
+      setProducts(prods);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     } finally {
@@ -246,7 +247,11 @@ export default function Stock() {
               <Select value={form.product_id} onValueChange={(v) => setForm({ ...form, product_id: v })}>
                 <SelectTrigger className="input-vitalle h-14"><SelectValue placeholder="Escolha a peça..." /></SelectTrigger>
                 <SelectContent>
-                  {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  {products.length === 0 ? (
+                    <SelectItem value="" disabled>Nenhum produto cadastrado. Cadastre um produto primeiro.</SelectItem>
+                  ) : (
+                    products.map((p) => <SelectItem key={p.id} value={p.id}>{p?.name || 'Produto sem nome'}</SelectItem>)
+                  )}
                 </SelectContent>
               </Select>
             </div>
