@@ -2,7 +2,7 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
     <title>Vitalle</title>
     
     <!-- PWA Manifest -->
@@ -25,8 +25,10 @@
     <meta name="apple-touch-fullscreen" content="yes">
     
     <style>
-      /* Hide Safari UI */
-      body { margin: 0; padding: 0; }
+      /* Fullscreen Mobile App - No white spaces */
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 0; height: 100vh; overflow: hidden; }
+      #root { height: 100vh; }
     </style>
   </head>
   <body>

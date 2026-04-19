@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Edit3 } from "lucide-react";
+import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Camera, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   parsePriceToCents,
@@ -28,6 +28,10 @@ export default function Products() {
     sku: "",
     status: "Ativo"
   });
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [metrics, setMetrics] = useState({ profit_cents: 0n, margin: 0, commission_value_cents: 0n, net_profit_cents: 0n });
 
@@ -73,15 +77,57 @@ export default function Products() {
     }
   }, [formData.cost_price, formData.sell_price, formData.commission_percent]);
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setSelectedFile(file);
+      setFormData(prev => ({...prev, image_url: ''})); // Clear old URL
+    }
+  };
+
+  const uploadImage = async (file) => {
+    if (!file) return null;
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `products/${Date.now()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from('vitalle_images')
+        .upload(fileName, file, { upsert: true });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage
+        .from('vitalle_images')
+        .getPublicUrl(fileName);
+      return publicUrl;
+    } catch (error) {
+      toast.error("Erro no upload da imagem", { description: error.message });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   async function handleSave(e) {
     e.preventDefault();
     setLoading(true);
     try {
+      let finalImageUrl = formData.image_url;
+      if (selectedFile) {
+        finalImageUrl = await uploadImage(selectedFile);
+        if (!finalImageUrl) {
+          setLoading(false);
+          return;
+        }
+      }
+
       const costCents = parsePriceToCents(formData.cost_price);
       const sellCents = parsePriceToCents(formData.sell_price);
       
       const { error } = await supabase.from('products').insert([{
         ...formData,
+        image_url: finalImageUrl,
         price: parseFloat(formData.sell_price) || 0,
         cost_price: parseFloat(formData.cost_price) || 0,
         sell_price_cents: Number(sellCents),
@@ -99,7 +145,9 @@ export default function Products() {
 
       setShowForm(false);
       setFormData({ name: "", category: "", cost_price: "", sell_price: "", commission_percent: "5", brand: "Vitalle Exclusive", image_url: "", color: "", sku: "", status: "Ativo" });
-      fetchProducts(); // Atualiza a lista após salvar
+      setSelectedFile(null);
+      setPreviewUrl("");
+      fetchProducts();
     } catch (error) {
       toast.error("ERRO NO CADASTRO", { description: error.message });
     } finally {
@@ -149,7 +197,30 @@ export default function Products() {
                 <ImageIcon className="h-4 w-4" /> Visual & Categoria
               </h3>
               <div className="space-y-4">
-                <input type="text" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} className="input-vitalle w-full" placeholder="URL da Imagem" />
+                <div className="aspect-[3/4] bg-slate-100 rounded-[1.5rem] overflow-hidden shadow-md border-2 border-dashed border-slate-300 hover:border-magenta/50 transition-colors cursor-pointer group">
+                  <label className="w-full h-full flex flex-col items-center justify-center text-slate-400 group-hover:text-magenta transition-colors">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleFileSelect} 
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                    {previewUrl ? (
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        <Camera className="h-12 w-12 mb-2 opacity-50 group-hover:opacity-100" />
+                        <div className="text-center">
+                          <p className="font-black text-lg">📸</p>
+                          <p className="text-sm font-bold uppercase tracking-wider">Foto do Produto</p>
+                          <p className="text-xs text-slate-500">Aspecto 3:4 automático</p>
+                        </div>
+                      </>
+                    )}
+                  </label>
+                </div>
+                {uploading && <p className="text-magenta text-sm font-bold flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</p>}
                 <input type="text" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="input-vitalle w-full" placeholder="Categoria" />
               </div>
             </div>

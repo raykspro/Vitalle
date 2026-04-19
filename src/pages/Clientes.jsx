@@ -17,8 +17,7 @@ const Clientes = () => {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', notes: '' });
   const [searchTerm, setSearchTerm] = useState('');
-  const [uploadFile, setUploadFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+
 
   useEffect(() => {
     loadCustomers();
@@ -76,29 +75,7 @@ const Clientes = () => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!uploadFile) return;
-    
-    try {
-      setUploadProgress(0);
-      const fileExt = uploadFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `customers/${user.id}/${fileName}`;
 
-      const { data, error } = await supabase.storage
-        .from('customers')
-        .upload(filePath, uploadFile, {
-          upsert: true
-        });
-      
-      if (error) throw error;
-      alert('Upload concluído!');
-      setUploadFile(null);
-      setUploadProgress(0);
-    } catch (error) {
-      alert('Erro no upload: ' + error.message);
-    }
-  };
 
   if (loading) return <div>Carregando...</div>;
 
@@ -118,26 +95,7 @@ const Clientes = () => {
         className="rounded-[2.5rem] shadow-xl max-w-md"
       />
 
-      {/* Upload Image */}
-      <Card className="border-0 shadow-2xl">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Upload className="h-5 w-5 text-[#D946EF]" />
-            <h3 className="font-black text-lg">Upload Foto Cliente</h3>
-          </div>
-          <div className="flex gap-3">
-            <Input 
-              type="file" 
-              accept="image/*"
-              onChange={(e) => setUploadFile(e.target.files[0])}
-              className="rounded-[2.5rem] flex-1"
-            />
-            <Button onClick={handleUpload} className="rounded-[2.5rem] bg-[#D946EF]" disabled={!uploadFile}>
-              Upload
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Upload removido conforme especificação */}
 
       {/* Form */}
       <Card className="border-0 shadow-2xl">
