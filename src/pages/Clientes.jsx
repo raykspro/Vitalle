@@ -6,11 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { User, Plus, Search, Trash2, Upload, Edit } from 'lucide-react';
-import { useSupabaseClient } from '../hooks/useSupabase';
+import { useSupabase } from '../hooks/useSupabase';
 import { useUser } from '@clerk/clerk-react';
 
 const Clientes = () => {
-  const supabase = useSupabaseClient();
+  const supabase = useSupabase();
   const { user } = useUser();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,14 +45,12 @@ const Clientes = () => {
     e.preventDefault();
     try {
       if (editingId) {
-        // Update
         const { error } = await supabase
           .from('customers')
           .update({ ...formData })
           .eq('id', editingId);
         if (error) throw error;
       } else {
-        // Create
         const { error } = await supabase
           .from('customers')
           .insert({ ...formData, created_by: user.id });
@@ -90,8 +88,7 @@ const Clientes = () => {
       const { data, error } = await supabase.storage
         .from('customers')
         .upload(filePath, uploadFile, {
-          upsert: true,
-          onUploadProgress: (progress) => setUploadProgress(progress)
+          upsert: true
         });
       
       if (error) throw error;
@@ -114,14 +111,12 @@ const Clientes = () => {
       </header>
 
       {/* Search */}
-      <div>
-        <Input 
-          placeholder="Pesquisar por nome ou telefone..." 
-          value={searchTerm} 
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="rounded-[2.5rem] shadow-xl max-w-md"
-        />
-      </div>
+      <Input 
+        placeholder="Pesquisar por nome ou telefone..." 
+        value={searchTerm} 
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="rounded-[2.5rem] shadow-xl max-w-md"
+      />
 
       {/* Upload Image */}
       <Card className="border-0 shadow-2xl">
@@ -138,7 +133,7 @@ const Clientes = () => {
               className="rounded-[2.5rem] flex-1"
             />
             <Button onClick={handleUpload} className="rounded-[2.5rem] bg-[#D946EF]" disabled={!uploadFile}>
-              {uploadProgress > 0 ? `${uploadProgress}%` : 'Upload'}
+              Upload
             </Button>
           </div>
         </CardContent>
@@ -200,7 +195,10 @@ const Clientes = () => {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => {setEditingId(null); setFormData({ name: '', phone: '', email: '', notes: '' });}}
+                  onClick={() => {
+                    setEditingId(null);
+                    setFormData({ name: '', phone: '', email: '', notes: '' });
+                  }}
                   className="rounded-[2.5rem]"
                 >
                   Cancelar
