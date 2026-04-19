@@ -13,8 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-const sizes = ["PP", "P", "M", "G", "GG", "3G", "Único"];
-
 const Vendas = () => {
   const { user } = useUser();
   const [stats, setStats] = useState({ total: 0, lancamentos: 0, comissoes: 0n });
@@ -31,7 +29,6 @@ const Vendas = () => {
     payment_method: 'PIX',
     notes: ''
   });
-  const [availableStock, setAvailableStock] = useState({});
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -50,7 +47,7 @@ const Vendas = () => {
       ]);
       setCustomers(custs || []);
       setProducts(prods || []);
-      const totalComissoes = commRes.data?.reduce((sum, s) => sum + BigInt(s.commission_value_cents || 0), 0n) || 0n;
+      const totalComissoes = commRes.data?.reduce((sum, s) => sum + BigInt(s?.commission_cents ?? 0), 0n) || 0n;
       setStats({ total: salesRes.count, lancamentos: invoicesRes.count, comissoes: totalComissoes });
 
       // Load stock grouped by product
@@ -142,7 +139,7 @@ const Vendas = () => {
         final_amount: finalAmount,
         payment_method: formData.payment_method,
         notes: formData.notes,
-        commission_value_cents: commissionCents
+        commission_cents: commissionCents
       };
       await createCompleteSale(payload, user.id);
       alert('Venda concluída com sucesso!');
@@ -197,7 +194,7 @@ const Vendas = () => {
       {/* New Sale Form Toggle */}
       <Button 
         onClick={() => setFormMode(!formMode)} 
-        className="h-16 text-lg font-black rounded-3xl shadow-xl hover:shadow-2xl w-full md:w-auto"
+        className="h-16 text-lg font-black rounded-[2.5rem] shadow-xl hover:shadow-2xl w-full md:w-auto bg-[#D946EF] hover:bg-[#D946EF]/90 text-white"
         variant={formMode ? 'destructive' : 'default'}
       >
         {formMode ? <X className="h-5 w-5 mr-2" /> : <Plus className="h-5 w-5 mr-2" />}
@@ -210,7 +207,7 @@ const Vendas = () => {
             <CardTitle className="text-2xl font-black uppercase tracking-tight">Nova Venda</CardTitle>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
-            {error && <Badge variant="destructive" className="w-full justify-center text-xs py-2">{error}</Badge>}
+            {error && <Badge variant="destructive" className="w-full justify-center text-xs py-2 rounded-[2.5rem]">{error}</Badge>}
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Customer */}
               <div>
@@ -221,11 +218,11 @@ const Vendas = () => {
                     const cust = customers.find(c => c.id === v);
                     setFormData(prev => ({...prev, customer_id: v, customer_name: cust ? cust.name : ''}));
                   }}>
-                    <SelectTrigger className="pl-10">
+                    <SelectTrigger className="pl-10 rounded-[2.5rem]">
                       <SelectValue placeholder="Pesquise ou selecione cliente..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      {customers?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -250,11 +247,11 @@ const Vendas = () => {
                       <TableRow key={idx}>
                         <TableCell>
                           <Select value={item.product_id} onValueChange={v => updateItem(idx, 'product_id', v)}>
-                            <SelectTrigger>
+                            <SelectTrigger className="z-50 rounded-[2.5rem]">
                               <SelectValue placeholder="Selecione produto" />
                             </SelectTrigger>
                             <SelectContent>
-                              {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                              {products?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-slate-500 mt-1">{item.product_name}</p>
@@ -262,30 +259,30 @@ const Vendas = () => {
                         <TableCell>
                           <div className="flex gap-1">
                             <Select value={item.size} onValueChange={v => updateItem(idx, 'size', v)}>
-                              <SelectTrigger className="w-16 h-10">
+                              <SelectTrigger className="w-16 h-10 z-50 rounded-[2.5rem]">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {item.available.map((a, i) => <SelectItem key={i} value={a.size}>{a.size}</SelectItem>)}
+                                {item.available?.map((a, i) => <SelectItem key={i} value={a.size}>{a.size}</SelectItem>)}
                               </SelectContent>
                             </Select>
-                            <Input className="w-20 h-10" value={item.color} onChange={e => updateItem(idx, 'color', e.target.value)} placeholder="Cor" />
+                            <Input className="w-20 h-10 rounded-[2.5rem]" value={item.color} onChange={e => updateItem(idx, 'color', e.target.value)} placeholder="Cor" />
                           </div>
                           <div className="text-xs text-slate-500 mt-1">
-                            Disp: {item.available.find(a => a.size === item.size)?.quantity || 0}
+                            Disp: {item.available?.find(a => a.size === item.size)?.quantity || 0}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Input type="number" className="w-16" min="1" value={item.quantity} onChange={e => updateItem(idx, 'quantity', e.target.value)} />
+                          <Input type="number" className="w-16 rounded-[2.5rem]" min="1" value={item.quantity} onChange={e => updateItem(idx, 'quantity', e.target.value)} />
                         </TableCell>
                         <TableCell>
-                          <Input type="number" className="w-24" step="0.01" value={item.unit_price} onChange={e => updateItem(idx, 'unit_price', e.target.value)} />
+                          <Input type="number" className="w-24 rounded-[2.5rem]" step="0.01" value={item.unit_price} onChange={e => updateItem(idx, 'unit_price', e.target.value)} />
                         </TableCell>
                         <TableCell className="font-black text-magenta">
                           R$ {item.total.toFixed(2)}
                         </TableCell>
                         <TableCell>
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(idx)}>
+                          <Button type="button" variant="ghost" size="icon" className="rounded-[2.5rem]" onClick={() => removeItem(idx)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -293,21 +290,21 @@ const Vendas = () => {
                     ))}
                   </TableBody>
                 </Table>
-                <Button type="button" variant="outline" onClick={addItem} className="w-full">
+                <Button type="button" variant="outline" onClick={addItem} className="w-full rounded-[2.5rem]">
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Item
                 </Button>
               </div>
 
               {/* Totals */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl">
+              <div className="mt-8 mb-6 grid md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-[2.5rem]">
                 <div>
                   <p className="text-sm text-slate-500">Subtotal</p>
                   <p className="text-2xl font-black text-slate-900">R$ {totalAmount.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Desconto</p>
-                  <Input type="number" step="0.01" value={formData.discount} onChange={e => setFormData(prev => ({...prev, discount: parseFloat(e.target.value) || 0}))} className="text-xl font-black" />
+                  <Input type="number" step="0.01" value={formData.discount} onChange={e => setFormData(prev => ({...prev, discount: parseFloat(e.target.value) || 0}))} className="text-xl font-black rounded-[2.5rem]" />
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Total Final</p>
@@ -324,7 +321,7 @@ const Vendas = () => {
                 <div>
                   <Label className="text-sm font-black uppercase">Forma de Pagamento</Label>
                   <Select value={formData.payment_method} onValueChange={v => setFormData(prev => ({...prev, payment_method: v}))}>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-[2.5rem]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -338,11 +335,11 @@ const Vendas = () => {
                 </div>
                 <div>
                   <Label className="text-sm font-black uppercase">Observações</Label>
-                  <Input value={formData.notes} onChange={e => setFormData(prev => ({...prev, notes: e.target.value}))} placeholder="Opcional" />
+                  <Input value={formData.notes} onChange={e => setFormData(prev => ({...prev, notes: e.target.value}))} placeholder="Opcional" className="rounded-[2.5rem]" />
                 </div>
               </div>
 
-              <Button type="submit" className="h-16 w-full text-lg font-black bg-magenta hover:bg-magenta/90 shadow-2xl">
+              <Button type="submit" className="h-16 w-full text-lg font-black rounded-[2.5rem] bg-[#D946EF] hover:bg-[#D946EF]/90 shadow-2xl text-white">
                 <DollarSign className="h-5 w-5 mr-2" />
                 CONCLUIR VENDA (R$ {finalAmount.toFixed(2)})
               </Button>
@@ -353,10 +350,10 @@ const Vendas = () => {
 
       {/* Previous buttons */}
       <div className="grid md:grid-cols-2 gap-6">
-        <Button className="h-20 text-lg font-black rounded-3xl shadow-xl hover:shadow-2xl">
+        <Button className="h-20 text-lg font-black rounded-[2.5rem] shadow-xl hover:shadow-2xl">
           → Ver Relatório de Comissões
         </Button>
-        <Button className="h-20 text-lg font-black rounded-3xl shadow-xl hover:shadow-2xl bg-magenta text-white hover:bg-magenta/90">
+        <Button className="h-20 text-lg font-black rounded-[2.5rem] shadow-xl hover:shadow-2xl bg-[#D946EF] text-white hover:bg-[#D946EF]/90">
           Lançamentos / Histórico
         </Button>
       </div>
@@ -365,3 +362,4 @@ const Vendas = () => {
 };
 
 export default Vendas;
+

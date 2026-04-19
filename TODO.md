@@ -1,14 +1,27 @@
-# Vitalle Supabase Sync TODO
+# TODO - Limpeza Vitalle (Plano Aprovado)
 
-## Step 1: ✅ Update src/api/supabase.js - Add JOIN queries (products with stock_items, suppliers with purchase_orders, etc.)
+## Status: ✅ Iniciando implementação
 
-## Step 2: ✅ Update pages with direct queries (Finance.jsx, Vendas.jsx stats, etc.) for joins
+**Passos do Plano (breakdown lógico):**
 
-## Step 3: Add optional chaining (?.) & skeletons to all maps/renders in Products, Finance*, Vendas, Clientes, Fornecedores
+1. **[PENDENTE]** Criar TODO.md (concluído)
+2. ✅ Editar src/pages/Vendas.jsx: commission_cents corrigido, z-index dropdowns, rounded-[2.5rem] botões principais, margin totals, magenta #D946EF
 
-## Step 4: Ensure post-submit refresh in ALL handleSubmit (call fetch func)
+   - Renomear commission_value_cents → commission_cents (payload, reduce, stats)
+   - Adicionar z-[99] mt-4 aos SelectTrigger de produtos/tamanhos
+   - rounded-[2.5rem] em todos Input/Button
+   - bg-[#D946EF] em botões principais
+   - Mobile: TableRow → Card/grid-cols-1 sm:grid-cols-N
+   - ?. em commission_cents acessos
+   
+3. **[PENDENTE]** Editar src/pages/Clientes.jsx:
+   - Corrigir sintaxe ts(8002/1005): balancear { } ( ) em upload logic/try-catch
+   - Garantir export default Clientes;
+   - Aplicar rounded-[2.5rem], magenta botões
+   - Mobile cards para tabelas
 
-## Step 5: Add tab filters (Finance: supplier/client, Contatos split)
+4. **[PENDENTE]** Teste: npm run dev, verificar console/DB, mobile viewport, dropdowns
+5. **[PENDENTE]** Atualizar TODO progresso, attempt_completion
 
-## Step 6: Test & Complete
+Próximo: Editar Vendas.jsx (tem conteúdo completo)
 
