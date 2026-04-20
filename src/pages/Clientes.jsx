@@ -1,24 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import React, { useState, useEffect } from 'react';
-import { useSupabaseClient } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { User, Plus, Search, Trash2, Upload, Edit } from 'lucide-react';
+import { User, Plus, Search, Trash2, Edit } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 
 const Clientes = () => {
-  const supabase = useSupabaseClient();
+  const supabaseClient = supabase;
   const { user } = useUser();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', phone: '', email: '', notes: '' });
   const [searchTerm, setSearchTerm] = useState('');
-
 
   useEffect(() => {
     loadCustomers();
@@ -76,8 +74,6 @@ const Clientes = () => {
     }
   };
 
-
-
   if (loading) return <div>Carregando...</div>;
 
   return (
@@ -95,8 +91,6 @@ const Clientes = () => {
         onChange={(e) => setSearchTerm(e.target.value)}
         className="rounded-[2.5rem] shadow-xl max-w-md"
       />
-
-      {/* Upload removido conforme especificação */}
 
       {/* Form */}
       <Card className="border-0 shadow-2xl">
