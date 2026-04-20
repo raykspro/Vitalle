@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSupabaseClient } from '../lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,11 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { User, Plus, Search, Trash2, Upload, Edit } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
 import { useUser } from '@clerk/clerk-react';
 
 const Clientes = () => {
-  const supabase = useSupabase();
+  const supabase = useSupabaseClient();
   const { user } = useUser();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);

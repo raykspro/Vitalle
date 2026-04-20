@@ -16,6 +16,7 @@ import Vendas from './pages/Vendas';
 import Clientes from './pages/Clientes';
 import Fornecedores from './pages/Fornecedores';
 import Configuracoes from './pages/Configuracoes';
+import Recebimento from './pages/Recebimento';
 import { PWAProvider, usePWA } from './lib/PWAContext';
 
 function AppContent() {
@@ -66,6 +67,7 @@ function AppContent() {
         
         {/* Ordens & Config */}
         <Route path="/ordens-compra" element={<Layout><PurchaseOrder /></Layout>} />
+        <Route path="/recebimento" element={<Layout><Recebimento /></Layout>} />
         <Route path="/configuracoes" element={<Layout><Configuracoes /></Layout>} />
       </Route>
 

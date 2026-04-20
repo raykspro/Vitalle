@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply bg-[#FDFBF7] text-slate-900 font-inter antialiased overflow-x-hidden;
+    @apply bg-[#FDFBF7] text-slate-900 font-inter antialiased;
   }
   h1, h2, h3 {
     @apply uppercase tracking-tighter font-black;
