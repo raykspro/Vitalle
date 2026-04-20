@@ -127,7 +127,7 @@ export default function Stock() {
             className="pl-10 rounded-[2rem] border-slate-200 shadow-md bg-white" 
           />
         </div>
-        <Button onClick={openNew} className="bg-[#D946EF] hover:bg-[#D946EF]/90 text-white font-black uppercase tracking-widest rounded-[2rem] shadow-2xl px-8 py-4 h-auto">
+        <Button onClick={() => {setForm({ product_id: "", size: "", color: "", quantity: "" }); setDialogOpen(true);}} className="bg-[#D946EF] hover:bg-[#D946EF]/90 text-white font-black uppercase tracking-widest rounded-[2.5rem] shadow-2xl px-8 py-4 h-auto">
           <Plus className="h-4 w-4 mr-2" /> ADICIONAR ITEM
         </Button>
       </div>

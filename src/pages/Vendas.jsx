@@ -81,10 +81,14 @@ const Vendas = () => {
     const items = [...formData.items];
     if (field === 'product_id') {
       const prod = products.find(p => p.id === value);
+      const firstStock = stockByProduct[value]?.[0];
       items[index] = {
         ...items[index],
         product_id: value,
         product_name: prod?.name || '',
+        unit_price: Number(prod?.sell_price || 0),
+        size: firstStock?.size || 'Único',
+        color: firstStock?.color || 'Satin',
         commission_percent: parseFloat(prod?.commission_percent || '0'),
         available: stockByProduct[value] || []
       };
