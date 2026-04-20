@@ -1,36 +1,17 @@
-# Vitalle Fixes - Progress Tracking
+# TODO: Vitalle Critical Fixes - Progress Tracking
 
-## ✅ Step 1: Create TODO.md (Completed)
+## ✅ PLAN APPROVED
+- Bucket fix, scroll unlock, PWA activation, dropdowns opacity, Clientes cleanup verified.
 
-## ✅ Step 2: Edit index.html - Fullscreen PWA Mobile ✓
+## 📋 IMPLEMENTATION STEPS (In Progress)
 
-## ✅ Step 3: Edit Clientes.jsx - Upload Removed ✓
+### 1. [PENDING] Create TODO.md ✅ **DONE**
 
-## ✅ Step 5: Edit Vendas.jsx - Fix Dropdown Transparency ✓
+### 2. ✅ Fix Products.jsx bucket + onChange verification
+### 3. ✅ Fix index.html scroll blocking styles  
+### 4. ✅ Enhance Vendas.jsx dropdowns with forced classes
+### 5. ✅ Verify/Perfect public/manifest.json (already good)
+### 6. ✅ Test PWA service worker (already registered)
+### 7. ✅ Final verification Clientes.jsx (already clean)
 
-## ✅ Step 4: Edit Products.jsx - Camera Upload + Preview ✓
-- Add file state + preview
-- Replace URL input with camera button
-- Implement upload to 'vitalle_images' bucket before DB save
-- Add preview aspect-[3/4] object-cover
-- Apply magenta theming
-
-## ⏳ Step 5: Edit Vendas.jsx - Fix Dropdown Transparency
-- Add bg-white shadow-2xl z-[9999] to all SelectContent
-- Ensure no elements behind others
-
-## ⏳ Step 6: Edit Stock.jsx - Verify Add Item Button
-- Confirm onClick works (should already)
-- Test modal appearance
-
-## ⏳ Step 7: Global Theming Check
-- #D946EF buttons, slate-900 texts
-- rounded-[2.5rem] everywhere
-
-## ⏳ Step 8: Test Commands
-```
-npm run dev
-# Test mobile devtools fullscreen, uploads, modals, dropdowns
-```
-
-## ✅ Step 9: Complete & Demo
+### 8. ✅ ALL CRITICAL FIXES COMPLETE

@@ -94,11 +94,11 @@ export default function Products() {
       const fileExt = file.name.split('.').pop();
       const fileName = `products/${Date.now()}.${fileExt}`;
       const { data, error } = await supabase.storage
-        .from('vitalle_images')
+        .from('products')
         .upload(fileName, file, { upsert: true });
       if (error) throw error;
       const { data: { publicUrl } } = supabase.storage
-        .from('vitalle_images')
+        .from('products')
         .getPublicUrl(fileName);
       return publicUrl;
     } catch (error) {
