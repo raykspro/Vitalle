@@ -112,7 +112,7 @@ const Vendas = () => {
 
   const totalAmount = formData.items.reduce((sum, item) => sum + item.total, 0);
   const finalAmount = totalAmount - formData.discount;
-  const commissionCents = Math.round(formData.items.reduce((sum, item) => sum + (item.total * (item.commission_percent / 100) * 100), 0));
+const commissionCents = Math.round(formData.items.reduce((sum, item) => sum + (item.total * 0.15 * 100), 0));
 
   const validateForm = () => {
     if (!formData.customer_name) return 'Selecione o cliente';
@@ -225,7 +225,7 @@ const Vendas = () => {
                     <SelectTrigger className="pl-10 rounded-[2.5rem]">
                       <SelectValue placeholder="Pesquise ou selecione cliente..." />
                     </SelectTrigger>
-                    <SelectContent className="!bg-white !opacity-100 shadow-2xl !z-[9999] border-slate-200 rounded-[1rem]">
+                    <SelectContent className="bg-white shadow-xl z-[9999] opacity-100 relative border-slate-200 rounded-[1rem]">
                       {customers?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -254,7 +254,7 @@ const Vendas = () => {
                             <SelectTrigger className="z-50 rounded-[2.5rem]">
                               <SelectValue placeholder="Selecione produto" />
                             </SelectTrigger>
-                            <SelectContent className="!bg-white !opacity-100 shadow-2xl !z-[9999] border-slate-200 rounded-[1rem]">
+                            <SelectContent className="bg-white shadow-xl z-[9999] opacity-100 relative border-slate-200 rounded-[1rem]">
                               {products?.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                             </SelectContent>
                           </Select>
@@ -266,7 +266,7 @@ const Vendas = () => {
                               <SelectTrigger className="w-16 h-10 z-50 rounded-[2.5rem]">
                                 <SelectValue />
                               </SelectTrigger>
-                              <SelectContent className="!bg-white !opacity-100 shadow-2xl !z-[9999] border-slate-200 rounded-[1rem]">
+                              <SelectContent className="bg-white shadow-xl z-[9999] opacity-100 relative border-slate-200 rounded-[1rem]">
                                 {item.available?.map((a, i) => <SelectItem key={i} value={a.size}>{a.size}</SelectItem>)}
                               </SelectContent>
                             </Select>

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { User, Plus, Search, Trash2, Upload, Edit } from 'lucide-react';
-import { useSupabase } from '../hooks/useSupabase';
+import { supabase } from '../lib/supabaseClient';
 import { useUser } from '@clerk/clerk-react';
 
 const Clientes = () => {

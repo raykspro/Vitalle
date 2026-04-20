@@ -6,10 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-const sizes = ["PP", "P", "M", "G", "GG", "3G", "Único"];
 
 export default function Stock() {
   const [stockItems, setStockItems] = useState([]);
@@ -21,7 +18,7 @@ export default function Stock() {
   const [adjustItem, setAdjustItem] = useState(null);
   const [adjustType, setAdjustType] = useState("Entrada");
   const [adjustQty, setAdjustQty] = useState(1);
-  const [isMobile] = useState(window.innerWidth < 768);
+  const [isMobile] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -63,7 +60,7 @@ export default function Stock() {
       if (insertError) throw insertError;
       toast.success("Item adicionado ao estoque!");
       setDialogOpen(false);
-      await loadData(); // Reatividade instantânea
+      await loadData();
     } catch (error) {
       console.error("Erro ao salvar:", error);
       toast.error("Erro ao salvar item");
@@ -81,7 +78,7 @@ export default function Stock() {
       toast.success("Estoque ajustado!");
       setAdjustItem(null);
       setAdjustQty(1);
-      await loadData(); // Reatividade
+      await loadData();
     } catch (error) {
       console.error("Erro ao ajustar:", error);
       toast.error("Erro ao ajustar");
@@ -94,7 +91,7 @@ export default function Stock() {
       const { error } = await supabase.from('stock_items').delete().eq('id', id);
       if (error) throw error;
       toast.success("Item excluído");
-      await loadData(); // Reatividade
+      await loadData();
     } catch (error) {
       toast.error("Erro ao excluir");
     }
@@ -155,73 +152,94 @@ export default function Stock() {
                   </div>
                 </div>
               </div>
-              {isMobile ? (
-                <div className="p-6 space-y-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="p-6 bg-slate-50 rounded-[2rem] border border-slate-200 shadow-xl hover:shadow-2xl transition-all">
-                      <div className="grid grid-cols-2 gap-4 items-center mb-3">
-                        <span className="font-bold text-sm">{item.size}</span>
-                        <span className="text-right font-black text-lg text-slate-900">{item.quantity || 0}</span>
-                      </div>
-                      <p className="text-slate-600 text-sm mb-4">{item.color}</p>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1 font-black uppercase tracking-widest rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100">
-                          <SlidersHorizontal className="h-3 w-3 mr-1" />
-                          Ajustar
-                        </Button>
-                        <Button size="sm" variant="destructive" className="flex-1 font-black uppercase tracking-widest rounded-xl">
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Excluir
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="text-left p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Tamanho</th>
-                        <th className="text-left p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Cor</th>
-                        <th className="text-center p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Qtd</th>
-                        <th className="text-right p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Ações</th>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="text-left p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Tamanho</th>
+                      <th className="text-left p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Cor</th>
+                      <th className="text-center p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Qtd</th>
+                      <th className="text-right p-6 font-black uppercase text-[10px] text-slate-900 tracking-widest">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {items.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-6">
+                          <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-black rounded-xl">{item.size}</span>
+                        </td>
+                        <td className="p-6 font-bold text-slate-900">{item.color}</td>
+                        <td className="p-6 text-center font-black text-2xl text-slate-900">{item.quantity || 0}</td>
+                        <td className="p-6 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button onClick={() => { setAdjustItem(item); setAdjustType("Entrada"); setAdjustQty(1); }} size="sm" variant="outline" className="font-black uppercase tracking-widest rounded-xl text-slate-600 hover:bg-slate-100">
+                              <SlidersHorizontal className="h-4 w-4 mr-1" />
+                              Ajustar
+                            </Button>
+                            <Button onClick={() => handleDelete(item.id)} size="sm" variant="destructive" className="font-black uppercase tracking-widest rounded-xl">
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Excluir
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {items.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="p-6">
-                            <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-black rounded-xl">{item.size}</span>
-                          </td>
-                          <td className="p-6 font-bold text-slate-900">{item.color}</td>
-                          <td className="p-6 text-center font-black text-2xl text-slate-900">{item.quantity || 0}</td>
-                          <td className="p-6 text-right">
-                            <div className="flex gap-2 justify-end">
-                              <Button onClick={() => { setAdjustItem(item); setAdjustType("Entrada"); setAdjustQty(1); }} size="sm" variant="outline" className="font-black uppercase tracking-widest rounded-xl text-slate-600 hover:bg-slate-100">
-                                <SlidersHorizontal className="h-4 w-4 mr-1" />
-                                Ajustar
-                              </Button>
-                              <Button onClick={() => handleDelete(item.id)} size="sm" variant="destructive" className="font-black uppercase tracking-widest rounded-xl">
-                                <Trash2 className="h-4 w-4 mr-1" />
-                                Excluir
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Dialogs remain the same but with rounded-[2.5rem] */}
-      {/* ... dialogs code ... */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md p-0 rounded-[2.5rem] bg-white shadow-2xl border-none overflow-hidden sm:max-w-lg">
+          <DialogHeader className="bg-[#D946EF] text-white p-8">
+            <DialogTitle className="text-2xl font-black uppercase tracking-widest">Novo Item</DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+            <form onSubmit={e => {e.preventDefault(); handleSave();}}>
+              <div className="space-y-4">
+                <Label className="text-sm font-black uppercase tracking-wider block mb-2 text-slate-700">Produto</Label>
+                <Select value={form.product_id} onValueChange={v => setForm(prev => ({...prev, product_id: v}))}>
+                  <SelectTrigger className="rounded-[2.5rem] h-14">
+                    <SelectValue placeholder="Escolha o produto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Label className="text-sm font-black uppercase tracking-wider block mb-2 text-slate-700">Tamanho</Label>
+                <Select value={form.size} onValueChange={v => setForm(prev => ({...prev, size: v}))}>
+                  <SelectTrigger className="rounded-[2.5rem] h-14">
+                    <SelectValue placeholder="P,M,G..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="P">P</SelectItem>
+                    <SelectItem value="M">M</SelectItem>
+                    <SelectItem value="G">G</SelectItem>
+                    <SelectItem value="GG">GG</SelectItem>
+                    <SelectItem value="Único">Único</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-black uppercase tracking-wider block mb-1 text-slate-700">Cor</Label>
+                    <Input className="rounded-[2.5rem] h-12 text-sm" value={form.color} onChange={e => setForm(prev => ({...prev, color: e.target.value}))} placeholder="Cor" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-black uppercase tracking-wider block mb-1 text-slate-700">Qtd</Label>
+                    <Input type="number" className="rounded-[2.5rem] h-12 text-sm" value={form.quantity} onChange={e => setForm(prev => ({...prev, quantity: e.target.value}))} min="1" placeholder="1" />
+                  </div>
+                </div>
+              </div>
+              <Button type="submit" className="w-full h-14 rounded-[2.5rem] bg-[#D946EF] hover:bg-[#D946EF]/90 font-black uppercase tracking-wide shadow-2xl">
+                Salvar Item
+              </Button>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

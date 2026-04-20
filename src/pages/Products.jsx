@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Camera, Edit3 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   parsePriceToCents,
@@ -185,22 +186,31 @@ export default function Products() {
                 <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="input-vitalle w-full" placeholder="Nome do Produto" />
                 <input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="input-vitalle w-full" placeholder="Marca" />
                 <div className="grid grid-cols-2 gap-4">
-                  <select value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} className="input-vitalle w-full" >
-                    <option value="">Tamanho</option>
-                    <option value="P">P</option>
-                    <option value="M">M</option>
-                    <option value="G">G</option>
-                    <option value="GG">GG</option>
-                    <option value="Único">Único</option>
-                  </select>
-                  <select value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="input-vitalle w-full" >
-                    <option value="">Cor</option>
-                    <option value="Preto">Preto</option>
-                    <option value="Branco">Branco</option>
-                    <option value="Satin">Satin</option>
-                    <option value="Vinho">Vinho</option>
-                    <option value="Azul Marinho">Azul Marinho</option>
-                  </select>
+                  <Select value={formData.sku} onValueChange={v => setFormData({...formData, sku: v})}>
+                    <SelectTrigger className="input-vitalle w-full rounded-[1.5rem] h-12">
+                      <SelectValue placeholder="Tamanho" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[9999] opacity-100 rounded-[1rem] shadow-2xl">
+                      <SelectItem value="P">P</SelectItem>
+                      <SelectItem value="M">M</SelectItem>
+                      <SelectItem value="G">G</SelectItem>
+                      <SelectItem value="GG">GG</SelectItem>
+                      <SelectItem value="Único">Único</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={formData.color} onValueChange={v => setFormData({...formData, color: v})}>
+                    <SelectTrigger className="input-vitalle w-full rounded-[1.5rem] h-12">
+                      <SelectValue placeholder="Cor" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[9999] opacity-100 rounded-[1rem] shadow-2xl">
+                      <SelectItem value="Preto">Preto</SelectItem>
+                      <SelectItem value="Branco">Branco</SelectItem>
+                      <SelectItem value="Satin">Satin</SelectItem>
+                      <SelectItem value="Vinho">Vinho</SelectItem>
+                      <SelectItem value="Azul Marinho">Azul Marinho</SelectItem>
+                      <SelectItem value="Romance">Romance</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -235,12 +245,16 @@ export default function Products() {
                   </label>
                 </div>
 {uploading && <p className="text-magenta text-sm font-bold flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</p>}
-                <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="input-vitalle w-full rounded-[1.5rem] p-3 border border-slate-200 focus:border-magenta">
-                  <option value="">Categoria</option>
-                  <option value="Baby Doll">Baby Doll</option>
-                  <option value="Baby Doll Infantil">Baby Doll Infantil</option>
-                  <option value="Camisola">Camisola</option>
-                </select>
+                <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
+                  <SelectTrigger className="input-vitalle w-full rounded-[1.5rem] h-12 border border-slate-200 focus:border-magenta">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[9999] opacity-100 rounded-[1rem] shadow-2xl">
+                    <SelectItem value="Baby Doll">Baby Doll</SelectItem>
+                    <SelectItem value="Baby Doll Infantil">Baby Doll Infantil</SelectItem>
+                    <SelectItem value="Camisola">Camisola</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
