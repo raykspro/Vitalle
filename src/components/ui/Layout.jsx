@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { useState, useEffect, createContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -16,21 +16,22 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/products", label: "Products", icon: Package },
-  { to: "/stock", label: "Stock", icon: Shirt },
-  { to: "/customers", label: "Customers", icon: Users },
-  { to: "/suppliers", label: "Suppliers", icon: Truck },
-  { to: "/vendas", label: "Sales", icon: ShoppingCart },
-  { to: "/finance", label: "Finance", icon: Wallet },
-  { to: "/configuracoes", label: "Settings", icon: Settings },
+  { to: "/products", label: "Produtos", icon: Package },
+  { to: "/stock", label: "Estoque", icon: Shirt },
+  { to: "/customers", label: "Clientes", icon: Users },
+  { to: "/suppliers", label: "Fornecedores", icon: Truck },
+  { to: "/vendas", label: "Vendas", icon: ShoppingCart },
+  { to: "/finance", label: "Financeiro", icon: Wallet },
+  { to: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
-const LayoutContext = createContext(null);
+// EXPORTADO PARA OUTROS ARQUIVOS USAREM
+export const LayoutContext = createContext(null);
 
 export const useLayoutContext = () => {
   const context = useContext(LayoutContext);
   if (!context) {
-    throw new Error('useLayoutContext must be used within Layout');
+    throw new Error('useLayoutContext deve ser usado dentro de um Layout');
   }
   return context;
 };
@@ -40,21 +41,13 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(null);
 
-  useEffect(() => {
-    import('@/api/clineClient').then(({ cline }) => {
-      cline.entities.Settings.list().then(data => {
-        if (data.length > 0) setStoreSettings(data[0]);
-      });
-    });
-  }, []);
-
   return (
     <LayoutContext.Provider value={{ mobileOpen, setMobileOpen }}>
-      <div className="flex h-screen overflow-hidden">
-        {/* Mobile overlay */}
+      <div className="flex h-screen overflow-hidden bg-background">
+        {/* Overlay Mobile */}
         {mobileOpen && (
           <div
-            className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
         )}
@@ -62,19 +55,17 @@ export default function Layout() {
         {/* Sidebar */}
         <aside
           className={cn(
-            "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground flex flex-col transition-transform duration-300 ease-in-out",
+            "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-300 ease-in-out",
             mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
           <div className="p-6 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-sidebar-primary flex items-center justify-center overflow-hidden flex-shrink-0">
-              {storeSettings?.logo_url
-                ? <img src={storeSettings.logo_url} alt="logo" className="h-full w-full object-cover" />
-                : <Shirt className="h-5 w-5 text-sidebar-primary-foreground" />}
+            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <Shirt className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-base font-semibold text-sidebar-foreground">{storeSettings?.store_name || "Minha Loja"}</h1>
-              <p className="text-xs text-sidebar-foreground/50">BOUTIQUE</p>
+              <h1 className="text-base font-semibold">Vitalle Boutique</h1>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Mestre</p>
             </div>
           </div>
 
@@ -89,8 +80,8 @@ export default function Layout() {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-primary"
-                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   )}
                 >
                   <item.icon className="h-4.5 w-4.5" />
@@ -99,29 +90,22 @@ export default function Layout() {
               );
             })}
           </nav>
-
-          <div className="p-4 mx-3 mb-4 rounded-xl bg-sidebar-accent/50">
-            <p className="text-xs text-sidebar-foreground/50">Sistema de Gestão</p>
-            <p className="text-xs text-sidebar-foreground/70 mt-1">v1.0</p>
-          </div>
         </aside>
 
-        {/* Main content */}
+        {/* Conteúdo Principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Top bar */}
-          <header className="h-16 border-b border-border bg-card flex items-center px-4 lg:px-8 gap-4 shrink-0">
+          <header className="h-16 border-b border-border bg-card/50 backdrop-blur-md flex items-center px-4 lg:px-8 gap-4 shrink-0">
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-muted"
+              className="lg:hidden p-2 rounded-lg hover:bg-accent"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-semibold">
-              {navItems.find((i) => i.to === location.pathname)?.label || "Página"}
+            <h2 className="text-lg font-semibold text-foreground">
+              {navItems.find((i) => i.to === location.pathname)?.label || "Sistema"}
             </h2>
           </header>
 
-          {/* Page content */}
           <main className="flex-1 overflow-y-auto p-4 lg:p-8">
             <Outlet />
           </main>
@@ -130,4 +114,3 @@ export default function Layout() {
     </LayoutContext.Provider>
   );
 }
-
