@@ -12,7 +12,7 @@ import Products from './pages/Products';
 import Stock from './pages/Stock';
 import PurchaseOrder from './pages/PurchaseOrder'; 
 import Login from './pages/Login';
-import MobileSales from './pages/MobileSales'; // A NOVA TELA MOBILE DE ELITE
+import MobileSales from './pages/MobileSales'; // SUA TELA DE ELITE
 import Clientes from './pages/Clientes';
 import Fornecedores from './pages/Fornecedores';
 import Configuracoes from './pages/Configuracoes';
@@ -22,11 +22,9 @@ function AppContent() {
   const { setInstallPrompt } = usePWA();
 
   useEffect(() => {
-    let deferredPrompt;
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
-      deferredPrompt = e;
-      setInstallPrompt(deferredPrompt);
+      setInstallPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -36,29 +34,29 @@ function AppContent() {
     <Routes>
       <Route path="/login" element={<Login />} />
       
-      {/* MESTRE: O sistema agora inicia direto em Vendas para agilizar o mobile */}
+      {/* MESTRE: Sistema inicia em Vendas para agilidade total */}
       <Route path="/" element={<Navigate to="/vendas" replace />} />
 
       <Route element={<AuthGuard />}>
-        {/* Rota Principal: Nova Venda */}
-        <Route path="/vendas" element={<Layout><MobileSales /></Layout>} />
-        
-        <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
-        <Route path="/produtos" element={<Layout><Products /></Layout>} />
-        <Route path="/estoque" element={<Layout><Stock /></Layout>} />
-        
-        <Route path="/finance/fluxo-caixa" element={<Layout><FinanceCashFlow /></Layout>} />
-        <Route path="/finance/contas-pagar" element={<Layout><FinancePayables /></Layout>} />
-        <Route path="/finance/contas-receber" element={<Layout><FinanceReceivables /></Layout>} />
-        <Route path="/finance/comissoes" element={<Layout><FinanceCommissions /></Layout>} />
-        <Route path="/finance" element={<Layout><Finance /></Layout>} />
-        
-        <Route path="/contatos/clientes" element={<Layout><Clientes /></Layout>} />
-        <Route path="/contatos/fornecedores" element={<Layout><Fornecedores /></Layout>} />
-        
-        <Route path="/ordens-compra" element={<Layout><PurchaseOrder /></Layout>} />
-        
-        <Route path="/configuracoes" element={<Layout><Configuracoes /></Layout>} />
+        <Route element={<Layout />}>
+          {/* SINCRONIZADO COM OS LINKS DA SIDEBAR (VITALLE NAV) */}
+          <Route path="/vendas" element={<MobileSales />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/stock" element={<Stock />} />
+          <Route path="/clientes" element={<Clientes />} />
+          <Route path="/fornecedores" element={<Fornecedores />} />
+          <Route path="/finance" element={<Finance />} />
+          
+          {/* SUB-ROTAS FINANCEIRAS */}
+          <Route path="/finance/cashflow" element={<FinanceCashFlow />} />
+          <Route path="/finance/payables" element={<FinancePayables />} />
+          <Route path="/finance/receivables" element={<FinanceReceivables />} />
+          <Route path="/finance/commissions" element={<FinanceCommissions />} />
+          
+          <Route path="/ordens-compra" element={<PurchaseOrder />} />
+          <Route path="/configuracoes" element={<Configuracoes />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/vendas" replace />} />
