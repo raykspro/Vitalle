@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { parsePriceToCents, formatPriceDisplay } from '../lib/formatters';
-import { toast } from '../components/ui/toast';
+
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -138,13 +138,13 @@ const Recebimento = () => {
           }]);
         }
       }
-      toast.success(`Recebimento confirmado! ${newProds} novos produtos criados.`);
+      alert(`Recebimento confirmado! ${newProds} novos produtos criados.`);
       setOrderText('');
       setFreteTotal('');
       setCustoNota('');
       setItems([]);
     } catch (e) {
-      toast.error('Erro: ' + e.message);
+      alert('Erro: ' + e.message);
     }
     setLoading(false);
     setConfirmOpen(false);
@@ -223,8 +223,10 @@ const Recebimento = () => {
               </TableBody>
             </Table>
             <Button onClick={() => setConfirmOpen(true)} className="mt-4 w-full" disabled={loading || !freteTotal}>
-              CONFIRMAR ENTRADA
+              CONFIRMAR ENTRADA DE ESTOQUE
             </Button>
+            {window.confirm(`Confirmar ${items.length} itens? ${newProds} novos produtos.`)}
+
           </CardContent>
         </Card>
       )}
