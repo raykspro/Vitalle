@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { ShoppingCart, Plus, Trash2, X, CheckCircle2, Loader2, User, CreditCard } from 'lucide-react';
-import { formatPriceDisplay } from '@/lib/formatters';
-import { useUser } from '@clerk/clerk-react';
+import { Plus, Trash2, X, CheckCircle2, Loader2, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -10,19 +8,21 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const Vendas = () => {
-  const { user } = useUser();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [formMode, setFormMode] = useState(false);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
-    customer_id: '', items: [], discount: 0, payment_method: 'PIX'
+    customer_id: '', 
+    items: [], 
+    discount: 0, 
+    payment_method: 'PIX'
   });
 
-  useEffect(() => { loadInitialData(); }, []);
+  useEffect(() => { loadVitalleData(); }, []);
 
-  async function loadInitialData() {
-    setLoading(true);
+  async function loadVitalleData() {
     try {
       const [custs, prods] = await Promise.all([
         supabase.from('customers').select('id, name').order('name'),
@@ -31,9 +31,10 @@ const Vendas = () => {
       setCustomers(custs.data || []);
       setProducts(prods.data || []);
     } catch (err) {
-      toast.error("Erro ao carregar dados da Vitalle.");
+      toast.error("Erro na conexão com a base Vitalle.");
+    } finally {
+      setInitialLoading(false);
     }
-    setLoading(false);
   }
 
   const addItem = () => {
@@ -49,7 +50,7 @@ const Vendas = () => {
     updatedItems[index] = {
       ...updatedItems[index],
       product_id: prodId,
-      unit_price: product ? product.sell_price_cents / 100 : 0
+      unit_price: product ? (product.sell_price_cents / 100) : 0
     };
     setFormData({ ...formData, items: updatedItems });
   };
@@ -59,23 +60,22 @@ const Vendas = () => {
 
   const handleFinalize = async (e) => {
     e.preventDefault();
-    if (!formData.customer_id || formData.items.length === 0) return toast.error("Mestre, preencha o cliente e os itens!");
+    if (!formData.customer_id) return toast.error("Selecione o Cliente, mestre!");
+    if (formData.items.length === 0) return toast.error("A sacola está vazia!");
 
     setLoading(true);
     try {
-      // 1. Criar a Venda
+      // 1. Registrar a Venda Principal
       const { data: sale, error: saleErr } = await supabase.from('sales').insert([{
         customer_id: formData.customer_id,
-        total_amount: totalAmount,
-        final_amount: finalAmount,
+        total_amount: finalAmount, // Usando total_amount para o valor final com desconto
         payment_method: formData.payment_method,
-        user_id: user?.id,
         status: 'completed'
       }]).select().single();
 
       if (saleErr) throw saleErr;
 
-      // 2. Vincular Itens (Histórico de Compras)
+      // 2. Registrar Itens e Vincular ao Cliente
       const saleItems = formData.items.map(item => ({
         sale_id: sale.id,
         product_id: item.product_id,
@@ -83,146 +83,203 @@ const Vendas = () => {
         unit_price: item.unit_price
       }));
 
-      await supabase.from('sale_items').insert(saleItems);
+      const { error: itemsErr } = await supabase.from('sale_items').insert(saleItems);
+      if (itemsErr) throw itemsErr;
 
-      toast.success("VENDA REGISTRADA NO HISTÓRICO!", { icon: <CheckCircle2 className="text-green-500" /> });
+      // 3. Baixa no Estoque (Opcional, mas recomendado)
+      for (const item of formData.items) {
+        const prod = products.find(p => p.id === item.product_id);
+        if (prod) {
+          await supabase.from('products')
+            .update({ stock_quantity: prod.stock_quantity - item.quantity })
+            .eq('id', item.product_id);
+        }
+      }
+
+      toast.success("VITALLE: VENDA CONCLUÍDA!", {
+        style: { background: '#D946EF', color: '#fff' }
+      });
+      
       setFormMode(false);
       setFormData({ customer_id: '', items: [], discount: 0, payment_method: 'PIX' });
+      loadVitalleData(); // Recarrega para atualizar estoque na tela
     } catch (err) {
-      toast.error("Erro crítico ao salvar venda.");
+      console.error(err);
+      toast.error("Falha ao processar venda no banco.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  if (initialLoading) return (
+    <div className="h-screen flex items-center justify-center bg-white">
+      <Loader2 className="animate-spin text-[#D946EF]" size={48} />
+    </div>
+  );
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10 space-y-8 bg-[#FAFAFA] min-h-screen">
-      <header className="flex justify-between items-center border-b border-slate-200 pb-6">
+    <div className="max-w-7xl mx-auto px-6 py-10 space-y-8 bg-[#FDFDFF] min-h-screen">
+      <header className="flex justify-between items-end border-b-4 border-slate-900 pb-6">
         <div>
-          <h1 className="text-5xl font-black text-slate-900 italic uppercase tracking-tighter">Vitalle</h1>
-          <p className="text-xs font-bold text-[#D946EF] uppercase tracking-[0.4em]">Boutique Luxury • PDV</p>
+          <h1 className="text-7xl font-black text-slate-900 italic uppercase tracking-tighter leading-none">Vitalle</h1>
+          <p className="text-sm font-bold text-[#D946EF] uppercase tracking-[0.5em] mt-2 ml-1">Boutique Luxury Store</p>
         </div>
         <Button 
           onClick={() => setFormMode(!formMode)}
-          className={cn("h-16 px-8 rounded-2xl font-black italic text-lg transition-all shadow-xl", 
-          formMode ? "bg-slate-800" : "bg-[#D946EF] hover:bg-[#C026D3] text-white")}
+          className={cn("h-20 px-12 rounded-full font-black italic text-xl transition-all shadow-2xl uppercase", 
+          formMode ? "bg-slate-200 text-slate-600" : "bg-[#D946EF] hover:bg-black text-white")}
         >
-          {formMode ? <X className="mr-2"/> : <Plus className="mr-2"/>}
-          {formMode ? "CANCELAR" : "NOVA VENDA"}
+          {formMode ? "Fechar" : "Nova Venda"}
         </Button>
       </header>
 
       {formMode ? (
-        <form onSubmit={handleFinalize} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4">
-          {/* Coluna Esquerda: Dados e Itens */}
+        <form onSubmit={handleFinalize} className="grid grid-cols-1 lg:grid-cols-3 gap-10 animate-in zoom-in-95 duration-300">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Cliente Vitalle</Label>
+            <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 space-y-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <Label className="text-xs font-black uppercase text-slate-500 tracking-widest ml-1">Selecionar Mestre Cliente</Label>
                   <Select value={formData.customer_id} onValueChange={v => setFormData({...formData, customer_id: v})}>
-                    <SelectTrigger className="h-14 rounded-xl bg-slate-50 border-none font-bold text-slate-700">
-                      <SelectValue placeholder="Selecione o Cliente..." />
+                    <SelectTrigger className="h-16 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-[#D946EF] font-bold text-lg">
+                      <SelectValue placeholder="Quem está comprando?" />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      {customers.map(c => <SelectItem key={c.id} value={c.id} className="font-bold">{c.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 ml-2">Pagamento</Label>
+
+                <div className="space-y-3">
+                  <Label className="text-xs font-black uppercase text-slate-500 tracking-widest ml-1">Meio de Pagamento</Label>
                   <Select value={formData.payment_method} onValueChange={v => setFormData({...formData, payment_method: v})}>
-                    <SelectTrigger className="h-14 rounded-xl bg-slate-50 border-none font-bold">
+                    <SelectTrigger className="h-16 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-[#D946EF] font-bold text-lg">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PIX">PIX</SelectItem>
-                      <SelectItem value="Cartão">Cartão de Crédito/Débito</SelectItem>
-                      <SelectItem value="Dinheiro">Espécie</SelectItem>
+                      <SelectItem value="PIX" className="font-bold text-green-600">PIX (Imediato)</SelectItem>
+                      <SelectItem value="Cartão" className="font-bold">Cartão de Crédito</SelectItem>
+                      <SelectItem value="Dinheiro" className="font-bold text-amber-600">Espécie</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-                  <h3 className="text-xs font-black text-[#D946EF] uppercase italic">Produtos na Sacola</h3>
-                  <Button type="button" onClick={addItem} variant="ghost" className="text-[10px] font-black text-slate-400">
-                    + ADICIONAR ITEM
+              <div className="space-y-6">
+                <div className="flex justify-between items-center border-b-2 border-slate-100 pb-4">
+                  <h3 className="text-xl font-black text-slate-900 uppercase italic">Itens da Coleção</h3>
+                  <Button type="button" onClick={addItem} className="bg-slate-900 text-white rounded-xl hover:bg-[#D946EF]">
+                    <Plus className="mr-2" size={18}/> ADICIONAR PRODUTO
                   </Button>
                 </div>
-                {formData.items.map((item, idx) => (
-                  <div key={idx} className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <div className="flex-1">
-                      <Select value={item.product_id} onValueChange={v => updateItem(idx, v)}>
-                        <SelectTrigger className="bg-white border-none h-10 font-bold text-xs">
-                          <SelectValue placeholder="Escolha o produto..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.stock_quantity} un)</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  {formData.items.map((item, idx) => (
+                    <div key={idx} className="group flex gap-4 items-center bg-white p-6 rounded-3xl border-2 border-slate-50 hover:border-[#D946EF]/30 transition-all shadow-sm">
+                      <div className="flex-1">
+                        <Select value={item.product_id} onValueChange={v => updateItem(idx, v)}>
+                          <SelectTrigger className="bg-slate-50 border-none h-12 font-bold">
+                            <SelectValue placeholder="Escolha o modelo..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.map(p => (
+                              <SelectItem key={p.id} value={p.id} disabled={p.stock_quantity <= 0}>
+                                {p.name} — {p.stock_quantity} em estoque
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-3 bg-slate-100 rounded-xl px-4 h-12">
+                        <Label className="text-[10px] font-black uppercase">Qtd</Label>
+                        <input 
+                          type="number" 
+                          min="1"
+                          className="w-12 bg-transparent border-none text-center font-black text-lg focus:ring-0"
+                          value={item.quantity}
+                          onChange={e => {
+                            const newItems = [...formData.items];
+                            newItems[idx].quantity = parseInt(e.target.value) || 1;
+                            setFormData({...formData, items: newItems});
+                          }}
+                        />
+                      </div>
+                      <div className="w-32 text-right font-black text-2xl text-slate-900 italic">
+                        R$ {(item.unit_price * item.quantity).toFixed(2)}
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setFormData({...formData, items: formData.items.filter((_, i) => i !== idx)})}
+                        className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <Trash2 size={20}/>
+                      </button>
                     </div>
-                    <input 
-                      type="number" 
-                      className="w-16 h-10 rounded-lg border-none bg-white text-center font-black text-xs"
-                      value={item.quantity}
-                      onChange={e => {
-                        const newItems = [...formData.items];
-                        newItems[idx].quantity = parseInt(e.target.value) || 0;
-                        setFormData({...formData, items: newItems});
-                      }}
-                    />
-                    <div className="w-24 text-right font-black text-slate-700 italic">
-                      R$ {(item.unit_price * item.quantity).toFixed(2)}
-                    </div>
-                    <button type="button" onClick={() => setFormData({...formData, items: formData.items.filter((_, i) => i !== idx)})} className="text-slate-300 hover:text-red-500">
-                      <Trash2 size={16}/>
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Coluna Direita: Resumo Financeiro */}
-          <div className="space-y-6">
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl space-y-8">
-              <h3 className="text-center font-black italic uppercase tracking-widest text-slate-500 text-xs">Resumo do Pedido</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-slate-400 text-sm font-bold">
+          <div className="space-y-8">
+            <div className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <ShoppingBag size={120} />
+              </div>
+              
+              <h3 className="font-black italic uppercase tracking-[0.3em] text-[#D946EF] text-sm mb-10">Checkout Vitalle</h3>
+              
+              <div className="space-y-6 relative z-10">
+                <div className="flex justify-between items-center text-slate-400 font-bold">
                   <span>Subtotal</span>
-                  <span>R$ {totalAmount.toFixed(2)}</span>
+                  <span className="text-xl">R$ {totalAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[#D946EF] text-sm font-black italic uppercase">Desconto R$</span>
+                
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase text-[#D946EF]">Desconto Especial (R$)</Label>
                   <input 
                     type="number" 
-                    className="bg-white/10 border-none w-20 rounded-lg px-3 py-1 font-black text-right outline-none"
+                    className="bg-white/10 border-2 border-white/5 w-full h-14 rounded-2xl px-6 font-black text-2xl text-white outline-none focus:border-[#D946EF] transition-all"
                     value={formData.discount}
                     onChange={e => setFormData({...formData, discount: parseFloat(e.target.value) || 0})}
                   />
                 </div>
-                <div className="pt-6 border-t border-white/10">
-                  <p className="text-[10px] font-black text-slate-500 uppercase text-center mb-1">Total a Receber</p>
-                  <p className="text-5xl font-black text-[#D946EF] italic text-center">R$ {finalAmount.toFixed(2)}</p>
+
+                <div className="pt-10 border-t border-white/10">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Valor Final do Pedido</p>
+                  <p className="text-6xl font-black text-white italic leading-none">
+                    <span className="text-[#D946EF] text-2xl not-italic mr-2">R$</span>
+                    {finalAmount.toFixed(2)}
+                  </p>
                 </div>
               </div>
+
               <Button 
                 type="submit" 
-                disabled={loading}
-                className="w-full h-16 rounded-2xl bg-white text-slate-900 hover:bg-[#D946EF] hover:text-white font-black italic text-xl transition-all"
+                disabled={loading || formData.items.length === 0}
+                className="w-full h-24 rounded-3xl bg-[#D946EF] hover:bg-white hover:text-black text-white font-black italic text-2xl transition-all shadow-xl mt-10 group"
               >
-                {loading ? <Loader2 className="animate-spin" /> : "FINALIZAR VENDA"}
+                {loading ? <Loader2 className="animate-spin" /> : (
+                  <span className="flex items-center justify-center gap-3">
+                    CONCLUIR VENDA <CheckCircle2 className="group-hover:text-[#D946EF]" />
+                  </span>
+                )}
               </Button>
             </div>
+            
+            <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Sistema Vitalle v3.0 • Acesso Master
+            </p>
           </div>
         </form>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Cards de métricas podem ser adicionados aqui como no seu design original */}
-          <div className="col-span-3 bg-white p-20 rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center">
-            <ShoppingCart size={48} className="text-slate-100 mb-4" />
-            <p className="text-slate-300 font-black italic uppercase">Pronto para a próxima venda, Mestre?</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+           <div className="col-span-3 bg-white p-32 rounded-[4rem] border-4 border-dashed border-slate-100 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-[#D946EF]/20 transition-all" onClick={() => setFormMode(true)}>
+            <div className="p-8 rounded-full bg-slate-50 text-slate-200 group-hover:text-[#D946EF] group-hover:bg-[#D946EF]/5 transition-all mb-6">
+              <ShoppingBag size={80} />
+            </div>
+            <p className="text-slate-400 font-black italic uppercase text-2xl tracking-tighter">Aguardando comando para nova venda, Mestre.</p>
+            <p className="text-[#D946EF] font-bold text-sm uppercase tracking-widest mt-4 opacity-0 group-hover:opacity-100 transition-all">Clique para iniciar</p>
           </div>
         </div>
       )}
