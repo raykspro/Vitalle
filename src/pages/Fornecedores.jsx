@@ -1,209 +1,143 @@
-import React, { useState } from 'react';
-import { Truck, UserPlus, X, Phone, Mail, MapPin, Edit3, Building } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useSuppliers } from '../hooks/useSuppliers.jsx';
-
-// Máscara Blindada de Telefone
-const maskPhone = (value) => {
-  if (!value) return "";
-  return value
-    .replace(/\D/g, '')
-    .replace(/(\d{2})(\d)/, '($1) $2')
-    .replace(/(\d{5})(\d)/, '$1-$2')
-    .replace(/(-\d{4})\d+?$/, '$1');
-};
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Search, Trash2, Edit, Save, Truck, X } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
+import InputMask from 'react-input-mask';
 
 const Fornecedores = () => {
-  const { suppliers, loading, addSupplier, updateSupplier } = useSuppliers();
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    cnpj: '', 
-    phone: '', 
-    email: '', 
-    contact_person: '', 
-    address: '', 
-    notes: '' 
-  });
-
-  const resetForm = () => {
-    setFormData({ name: '', cnpj: '', phone: '', email: '', contact_person: '', address: '', notes: '' });
-    setEditId(null);
-    setShowForm(false);
+  const { user } = useUser();
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const initialForm = { 
+    name: '', cnpj: '', phone: '', email: '', 
+    contact_person: '', address: '', notes: '' 
   };
+  const [formData, setFormData] = useState(initialForm);
+
+  useEffect(() => { loadSuppliers(); }, []);
+
+  async function loadSuppliers() {
+    setLoading(true);
+    const { data } = await supabase.from('suppliers').select('*').order('name');
+    setSuppliers(data || []);
+    setLoading(false);
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = editId 
-      ? await updateSupplier(editId, formData) 
-      : await addSupplier(formData);
-    
-    if (res?.error) {
-      alert(res.error);
-    } else {
-      resetForm();
-    }
+    try {
+      const payload = { ...formData, created_by: user.id };
+      const { error } = editingId 
+        ? await supabase.from('suppliers').update(payload).eq('id', editingId)
+        : await supabase.from('suppliers').insert(payload);
+      
+      if (error) throw error;
+      setFormData(initialForm);
+      setEditingId(null);
+      loadSuppliers();
+      alert("Mestre, fornecedor atualizado!");
+    } catch (error) { alert('Erro: ' + error.message); }
   };
 
-  const handleEdit = (fornecedor) => {
-    setFormData({
-      name: fornecedor.name || '',
-      cnpj: fornecedor.cnpj || '',
-      phone: fornecedor.phone || '',
-      email: fornecedor.email || '',
-      contact_person: fornecedor.contact_person || '',
-      address: fornecedor.address || '',
-      notes: fornecedor.notes || ''
-    });
-    setEditId(fornecedor.id);
-    setShowForm(true);
-  };
+  if (loading) return <div className="p-12 font-black italic animate-pulse text-[#D946EF] text-center">CARREGANDO PARCEIROS...</div>;
 
   return (
-    <div className="space-y-10">
-      <header className="flex justify-between items-center">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      <header className="flex items-center justify-between px-2">
         <div>
-          <div className="h-1.5 w-20 bg-magenta mb-3 rounded-full" />
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Fornecedores</h1>
-          <p className="text-slate-500 font-medium italic">Cadastro e controle de pedidos da Vitalle.</p>
+          <div className="h-1 w-8 bg-[#D946EF] mb-2 rounded-full" />
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic text-magenta">Fornecedores</h1>
         </div>
-        
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <button className="btn-vitalle flex items-center gap-2">
-              <UserPlus className="h-4 w-4" /> Novo Fornecedor
-            </button>
-          </DialogTrigger>
-          
-          <DialogContent className="max-w-2xl p-0 rounded-3xl bg-zinc-950 border-zinc-800 text-white overflow-hidden">
-            <DialogHeader className="p-8 pb-6 border-b border-white/5">
-              <DialogTitle className="text-2xl font-black italic uppercase tracking-widest text-magenta">
-                {editId ? 'Editar Fornecedor' : 'Novo Fornecedor'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Nome / Razão Social *</Label>
-                  <Input 
-                    required 
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value})} 
-                    className="bg-white/5 border-white/10 h-12 text-white placeholder:text-slate-600 focus:border-magenta" 
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">CNPJ</Label>
-                  <Input 
-                    value={formData.cnpj} 
-                    onChange={e => setFormData({...formData, cnpj: e.target.value})} 
-                    className="bg-white/5 border-white/10 h-12 text-white" 
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Telefone</Label>
-                  <Input 
-                    value={formData.phone} 
-                    onChange={e => setFormData({...formData, phone: maskPhone(e.target.value)})} 
-                    className="bg-white/5 border-white/10 h-12 text-white"
-                    placeholder="(00) 0 0000-0000"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">E-mail</Label>
-                  <Input 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
-                    className="bg-white/5 border-white/10 h-12 text-white" 
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest text-blue-400">Endereço Completo</Label>
-                  <Input 
-                    value={formData.address} 
-                    onChange={e => setFormData({...formData, address: e.target.value})} 
-                    className="bg-white/5 border-white/10 h-12 text-white" 
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Observações Internas</Label>
-                <textarea 
-                  value={formData.notes} 
-                  onChange={e => setFormData({...formData, notes: e.target.value})} 
-                  className="w-full h-24 p-4 bg-white/5 border border-white/10 rounded-2xl text-white resize-none focus:outline-none focus:border-magenta transition-colors" 
-                />
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button 
-                  type="button" 
-                  onClick={resetForm} 
-                  className="flex-1 h-14 font-black uppercase tracking-widest text-[11px] border border-white/10 rounded-2xl hover:bg-white/5 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="flex-1 h-14 bg-magenta text-white font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-[0_0_20px_rgba(255,0,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
-                  {editId ? 'Atualizar Dados' : 'Cadastrar Fornecedor'}
-                </button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </header>
 
-      <Card className="border-0 shadow-2xl bg-white overflow-hidden rounded-[2.5rem]">
-        <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-          <div className="grid md:grid-cols-4 gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-            <span>Fornecedor</span>
-            <span>Documento (CNPJ)</span>
-            <span>Contato</span>
-            <span className="text-right">Ações</span>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-20 text-center"><p className="animate-pulse font-black text-slate-300">SINCRONIZANDO VITALLE...</p></div>
-          ) : suppliers.length === 0 ? (
-            <p className="p-20 text-center text-slate-300 italic font-medium">Nenhum fornecedor na base de dados.</p>
-          ) : (
-            <div className="divide-y divide-slate-50">
-              {suppliers.map((fornecedor) => (
-                <div key={fornecedor.id} className="grid md:grid-cols-4 gap-4 items-center py-6 px-8 hover:bg-slate-50/80 transition-colors group">
-                  <div className="flex flex-col">
-                    <span className="font-bold text-slate-900 group-hover:text-magenta transition-colors">{fornecedor.name}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">{fornecedor.contact_person || 'Sem contato definido'}</span>
-                  </div>
-                  <span className="text-sm font-mono text-slate-500">{fornecedor.cnpj || '---'}</span>
-                  <span className="text-sm font-bold text-slate-700">{fornecedor.phone || '---'}</span>
-                  <div className="flex justify-end">
-                    <button 
-                      onClick={() => handleEdit(fornecedor)}
-                      className="p-3 hover:bg-magenta hover:text-white rounded-xl transition-all text-slate-400"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+      {/* Formulário Estilo Boutique */}
+      <Card className="border-0 shadow-sm rounded-3xl overflow-hidden bg-white border border-slate-100">
+        <div className="bg-slate-900 py-3 px-6 flex justify-between items-center">
+          <span className="text-white text-[10px] font-bold uppercase tracking-widest italic flex items-center gap-2">
+            <Truck size={12} /> {editingId ? 'Editar Fornecedor' : 'Novo Parceiro'}
+          </span>
+          {editingId && <X className="text-white size-4 cursor-pointer hover:text-red-400" onClick={() => {setEditingId(null); setFormData(initialForm);}} />}
+        </div>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Razão Social / Nome</Label>
+                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="rounded-xl border-none bg-slate-50 h-10" required />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">CNPJ</Label>
+                <InputMask mask="99.999.999/9999-99" value={formData.cnpj} onChange={e => setFormData({...formData, cnpj: e.target.value})}>
+                  {(inputProps) => <Input {...inputProps} className="rounded-xl border-none bg-slate-50 h-10" placeholder="00.000.000/0000-00" />}
+                </InputMask>
+              </div>
             </div>
-          )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Pessoa de Contato</Label>
+                <Input value={formData.contact_person} onChange={e => setFormData({...formData, contact_person: e.target.value})} className="rounded-xl border-none bg-slate-50 h-10" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">WhatsApp / Fone</Label>
+                <InputMask mask="(99) 9 9999-9999" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}>
+                  {(inputProps) => <Input {...inputProps} className="rounded-xl border-none bg-slate-50 h-10" placeholder="(00) 0 0000-0000" />}
+                </InputMask>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">E-mail</Label>
+                <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="rounded-xl border-none bg-slate-50 h-10" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Endereço Completo</Label>
+                <Input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-xl border-none bg-slate-50 h-10" />
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" className="bg-[#D946EF] hover:bg-[#C026D3] rounded-xl px-10 h-10 font-black uppercase italic text-[11px] shadow-md shadow-purple-100 w-fit">
+                <Save className="w-3.5 h-3.5 mr-2" /> {editingId ? 'Atualizar Dados' : 'Cadastrar Fornecedor'}
+              </Button>
+            </div>
+          </form>
         </CardContent>
+      </Card>
+
+      {/* Listagem compacta */}
+      <Card className="border-0 shadow-sm rounded-3xl overflow-hidden border border-slate-100">
+        <div className="p-4 bg-white border-b flex justify-between items-center">
+            <h3 className="text-[10px] font-black uppercase italic text-slate-400 tracking-widest">Parceiros de Negócio</h3>
+            <div className="relative w-40">
+              <Search className="absolute left-3 top-2 text-slate-300" size={12} />
+              <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8 h-8 rounded-full bg-slate-50 border-none text-[10px]" />
+            </div>
+        </div>
+        <Table>
+          <TableBody>
+            {suppliers.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase())).map((s) => (
+              <TableRow key={s.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableCell className="py-3">
+                  <p className="font-bold text-slate-800 text-sm">{s.name}</p>
+                  <p className="text-[10px] text-slate-400 font-medium uppercase">{s.contact_person || 'VITALLE PARTNER'}</p>
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-xs text-slate-500 font-mono">{s.cnpj}</TableCell>
+                <TableCell className="text-right py-3">
+                  <Button size="icon" variant="ghost" onClick={() => {setEditingId(s.id); setFormData(s); window.scrollTo(0,0);}} className="h-8 w-8 text-slate-300 hover:text-[#D946EF]"><Edit size={14}/></Button>
+                  <Button size="icon" variant="ghost" onClick={async () => {if(confirm('Remover fornecedor?')){await supabase.from('suppliers').delete().eq('id', s.id); loadSuppliers();}}} className="h-8 w-8 text-slate-300 hover:text-red-500"><Trash2 size={14}/></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );

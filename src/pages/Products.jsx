@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Camera, Edit3 } from "lucide-react";
+import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Camera, Edit3, Save } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import {
-  parsePriceToCents,
-  formatPriceDisplay,
-  percentOfCents,
-  subtractCents
-} from "@/lib/formatters";
+import { parsePriceToCents, formatPriceDisplay, percentOfCents, subtractCents } from "@/lib/formatters";
 import { supabase } from "../lib/supabaseClient";
 import { toast } from "sonner";
 
@@ -16,98 +11,63 @@ export default function Products() {
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [products, setProducts] = useState([]);
+  const [editingId, setEditingId] = useState(null);
   
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    cost_price: "",
-    sell_price: "",
-    commission_percent: "5",
-    brand: "Vitalle Exclusive",
-    image_url: "",
-    color: "",
-    sku: "",
-    status: "Ativo"
-  });
-
+  const initialForm = {
+    name: "", category: "", cost_price: "", sell_price: "",
+    commission_percent: "5", brand: "Vitalle Exclusive",
+    image_url: "", color: "", sku: "", status: "Ativo"
+  };
+  const [formData, setFormData] = useState(initialForm);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [metrics, setMetrics] = useState({ profit_cents: 0n, margin: 0, net_profit_cents: 0n });
 
-  const [metrics, setMetrics] = useState({ profit_cents: 0n, margin: 0, commission_value_cents: 0n, net_profit_cents: 0n });
-
-  // FUNÇÃO PARA BUSCAR PRODUTOS
-  async function fetchProducts() {
-    setLoadingProducts(true);
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error("Erro ao buscar:", error);
-      toast.error("Erro ao carregar vitrine");
-    } finally {
-      setLoadingProducts(false);
-    }
-  }
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  useEffect(() => { fetchProducts(); }, []);
 
   useEffect(() => {
     const costCents = parsePriceToCents(formData.cost_price);
     const sellCents = parsePriceToCents(formData.sell_price);
-    
     if (Number(sellCents) > 0) {
       const commValueCents = percentOfCents(sellCents, formData.commission_percent);
       const bruteProfitCents = subtractCents(sellCents, costCents);
       const netProfitCents = subtractCents(bruteProfitCents, commValueCents);
-      const margin = (Number(netProfitCents) / Number(sellCents)) * 100;
-
       setMetrics({ 
-        profit_cents: bruteProfitCents, 
-        margin,
-        commission_value_cents: commValueCents,
+        margin: (Number(netProfitCents) / Number(sellCents)) * 100,
         net_profit_cents: netProfitCents
       });
     }
-  }, [formData.cost_price, formData.sell_price, formData.commission_percent]);
+  }, [formData.cost_price, formData.sell_price]);
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      setSelectedFile(file);
-      setFormData(prev => ({...prev, image_url: ''})); // Clear old URL
-    }
+  async function fetchProducts() {
+    setLoadingProducts(true);
+    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    setProducts(data || []);
+    setLoadingProducts(false);
+  }
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setFormData({
+      ...item,
+      cost_price: item.cost_price?.toString() || "",
+      sell_price: item.sell_price?.toString() || ""
+    });
+    setPreviewUrl(item.image_url || "");
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const uploadImage = async (file) => {
     if (!file) return null;
-    try {
-      setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `products/${Date.now()}.${fileExt}`;
-      const { data, error } = await supabase.storage
-        .from('products')
-        .upload(fileName, file, { upsert: true });
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage
-        .from('products')
-        .getPublicUrl(fileName);
-      return publicUrl;
-    } catch (error) {
-      toast.error("Erro no upload da imagem", { description: error.message });
-      return null;
-    } finally {
-      setUploading(false);
-    }
+    setUploading(true);
+    const fileName = `products/${Date.now()}.${file.name.split('.').pop()}`;
+    const { data, error } = await supabase.storage.from('products').upload(fileName, file);
+    if (error) return null;
+    const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(fileName);
+    setUploading(false);
+    return publicUrl;
   };
 
   async function handleSave(e) {
@@ -115,233 +75,112 @@ export default function Products() {
     setLoading(true);
     try {
       let finalImageUrl = formData.image_url;
-      if (selectedFile) {
-        finalImageUrl = await uploadImage(selectedFile);
-        if (!finalImageUrl) {
-          setLoading(false);
-          return;
-        }
-      }
+      if (selectedFile) finalImageUrl = await uploadImage(selectedFile);
 
-      const costCents = parsePriceToCents(formData.cost_price);
-      const sellCents = parsePriceToCents(formData.sell_price);
-      
-      const { error } = await supabase.from('products').insert([{
+      const payload = {
         ...formData,
         image_url: finalImageUrl,
         price: parseFloat(formData.sell_price) || 0,
         cost_price: parseFloat(formData.cost_price) || 0,
-        sell_price_cents: Number(sellCents),
-        cost_price_cents: Number(costCents),
-        commission_value_cents: Number(metrics.commission_value_cents),
-        net_profit_cents: Number(metrics.net_profit_cents),
-        stock_quantity: 0
-      }]);
+        sell_price_cents: Number(parsePriceToCents(formData.sell_price)),
+        cost_price_cents: Number(parsePriceToCents(formData.cost_price)),
+        net_profit_cents: Number(metrics.net_profit_cents)
+      };
+
+      const { error } = editingId 
+        ? await supabase.from('products').update(payload).eq('id', editingId)
+        : await supabase.from('products').insert([payload]);
 
       if (error) throw error;
-
-      toast.success("💎 VITALLE: PEÇA CADASTRADA!", {
-        description: `${formData.name} já está no sistema.`,
-      });
-
+      toast.success(editingId ? "PEÇA ATUALIZADA!" : "PEÇA CADASTRADA!");
       setShowForm(false);
-      setFormData({ name: "", category: "", cost_price: "", sell_price: "", commission_percent: "5", brand: "Vitalle Exclusive", image_url: "", color: "", sku: "", status: "Ativo" });
-      setSelectedFile(null);
+      setEditingId(null);
+      setFormData(initialForm);
       setPreviewUrl("");
       fetchProducts();
-    } catch (error) {
-      toast.error("ERRO NO CADASTRO", { description: error.message });
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { toast.error(err.message); }
+    setLoading(false);
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
+      <header className="flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic">VITALLE GESTÃO</h1>
-          <p className="text-[10px] text-slate-500 font-bold tracking-[0.4em] uppercase mt-1">Inventário de Alto Padrão</p>
+          <h1 className="text-3xl font-black text-slate-900 italic uppercase">Vitalle Vitrine</h1>
+          <div className="h-1 w-12 bg-magenta rounded-full mt-1" />
         </div>
         <button 
-          onClick={() => setShowForm(!showForm)} 
-          className={cn(
-            "w-full md:w-auto px-10 py-5 rounded-2xl font-black text-[11px] tracking-[0.3em] transition-all flex items-center justify-center gap-3", 
-            showForm ? "bg-slate-900 text-white shadow-xl" : "bg-magenta text-white shadow-lg hover:scale-105"
-          )}
+          onClick={() => { setShowForm(!showForm); if(showForm) setEditingId(null); }}
+          className={cn("px-6 py-3 rounded-xl font-black text-[10px] tracking-widest transition-all flex items-center gap-2 shadow-lg", 
+            showForm ? "bg-slate-100 text-slate-500" : "bg-magenta text-white hover:scale-105")}
         >
-          {showForm ? <><X className="h-4 w-4" /> CANCELAR</> : <><Plus className="h-4 w-4" /> NOVO PRODUTO</>}
+          {showForm ? <X size={14}/> : <Plus size={14}/>} {showForm ? "FECHAR" : "NOVA PEÇA"}
         </button>
       </header>
 
       {showForm && (
-        <form onSubmit={handleSave} className="mx-auto max-w-4xl bg-white rounded-[2.5rem] p-6 lg:p-12 border border-slate-200 shadow-2xl space-y-10 animate-in zoom-in-95 duration-300">
-          <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
-            {/* COLUNA 1: IDENTIDADE */}
-            <div className="space-y-6">
-              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
-                <Tag className="h-4 w-4" /> Identidade da Peça
-              </h3>
-              <div className="space-y-4">
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="input-vitalle w-full" placeholder="Nome do Produto" />
-                <input type="text" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="input-vitalle w-full" placeholder="Marca" />
-                <div className="grid grid-cols-2 gap-4">
-                  <Select value={formData.sku} onValueChange={v => setFormData({...formData, sku: v})}>
-                    <SelectTrigger className="input-vitalle w-full rounded-[1.5rem] h-12">
-                      <SelectValue placeholder="Tamanho" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[9999] opacity-100 rounded-[1rem] shadow-2xl">
-                      <SelectItem value="P">P</SelectItem>
-                      <SelectItem value="M">M</SelectItem>
-                      <SelectItem value="G">G</SelectItem>
-                      <SelectItem value="GG">GG</SelectItem>
-                      <SelectItem value="Único">Único</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={formData.color} onValueChange={v => setFormData({...formData, color: v})}>
-                    <SelectTrigger className="input-vitalle w-full rounded-[1.5rem] h-12">
-                      <SelectValue placeholder="Cor" />
-                    </SelectTrigger>
-                    <SelectContent className="z-[9999] opacity-100 rounded-[1rem] shadow-2xl">
-                      <SelectItem value="Preto">Preto</SelectItem>
-                      <SelectItem value="Branco">Branco</SelectItem>
-                      <SelectItem value="Satin">Satin</SelectItem>
-                      <SelectItem value="Vinho">Vinho</SelectItem>
-                      <SelectItem value="Azul Marinho">Azul Marinho</SelectItem>
-                      <SelectItem value="Romance">Romance</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* COLUNA 2: MÍDIA */}
-            <div className="space-y-6">
-              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" /> Visual & Categoria
-              </h3>
-              <div className="space-y-4">
-                <div className="aspect-[3/4] bg-slate-100 rounded-[1.5rem] overflow-hidden shadow-md border-2 border-dashed border-slate-300 hover:border-magenta/50 transition-colors cursor-pointer group">
-                  <label className="w-full h-full flex flex-col items-center justify-center text-slate-400 group-hover:text-magenta transition-colors">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleFileSelect} 
-                      className="hidden"
-                      disabled={uploading}
-                    />
-                    {previewUrl ? (
-                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <>
-                        <Camera className="h-12 w-12 mb-2 opacity-50 group-hover:opacity-100" />
-                        <div className="text-center">
-                          <p className="font-black text-lg">📸</p>
-                          <p className="text-sm font-bold uppercase tracking-wider">Foto do Produto</p>
-                          <p className="text-xs text-slate-500">Aspecto 3:4 automático</p>
-                        </div>
-                      </>
-                    )}
-                  </label>
-                </div>
-{uploading && <p className="text-magenta text-sm font-bold flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</p>}
-                <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
-                  <SelectTrigger className="input-vitalle w-full rounded-[1.5rem] h-12 border border-slate-200 focus:border-magenta">
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999] opacity-100 rounded-[1rem] shadow-2xl">
-                    <SelectItem value="Baby Doll">Baby Doll</SelectItem>
-                    <SelectItem value="Baby Doll Infantil">Baby Doll Infantil</SelectItem>
-                    <SelectItem value="Camisola">Camisola</SelectItem>
-                  </SelectContent>
+        <form onSubmit={handleSave} className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-2xl space-y-8 animate-in slide-in-from-top-4">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">Identidade</Label>
+              <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="input-vitalle w-full h-11" placeholder="Nome da Peça" />
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={formData.sku} onValueChange={v => setFormData({...formData, sku: v})}>
+                  <SelectTrigger className="rounded-xl border-none bg-slate-50 h-11"><SelectValue placeholder="Tam" /></SelectTrigger>
+                  <SelectContent><SelectItem value="P">P</SelectItem><SelectItem value="M">M</SelectItem><SelectItem value="G">G</SelectItem><SelectItem value="GG">GG</SelectItem><SelectItem value="Único">Único</SelectItem></SelectContent>
                 </Select>
+                <input value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="input-vitalle w-full h-11" placeholder="Cor" />
               </div>
             </div>
 
-            {/* COLUNA 3: FINANCEIRO */}
-            <div className="bg-slate-50 rounded-[2rem] p-6 border-2 border-magenta/5 space-y-6">
-              <h3 className="text-[11px] font-black text-magenta tracking-widest uppercase flex items-center gap-2">
-                <DollarSign className="h-4 w-4" /> Precificação
-              </h3>
-              <div className="space-y-4">
-                <div className="bg-white p-3 rounded-xl shadow-sm">
-                  <label className="text-[9px] font-black text-slate-400 uppercase">Custo R$</label>
-                  <input required type="number" step="0.01" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="w-full border-none p-0 font-black outline-none" />
-                </div>
-                <div className="bg-white p-3 rounded-xl shadow-md border-2 border-magenta/20">
-                  <label className="text-[9px] font-black text-magenta uppercase">Venda R$</label>
-                  <input required type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="w-full border-none p-0 font-black text-magenta outline-none" />
-                </div>
-              </div>
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase text-slate-400">Visual</Label>
+              <label className="aspect-square bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer overflow-hidden group">
+                <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files[0]; if(file){ setSelectedFile(file); setPreviewUrl(URL.createObjectURL(file)); } }} className="hidden" />
+                {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" /> : <Camera className="text-slate-300 group-hover:text-magenta transition-colors" />}
+              </label>
             </div>
-          </div>
 
-          {/* PAINEL DE PERFORMANCE */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-900 p-8 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-magenta/20 blur-[80px] rounded-full" />
-            <div className="relative z-10">
-              <span className="text-[9px] font-black text-magenta uppercase">Lucro Líquido</span>
-              <p className="text-3xl font-black italic text-green-400">{formatPriceDisplay(metrics.net_profit_cents)}</p>
-            </div>
-            <div className="relative z-10">
-              <span className="text-[9px] font-black text-slate-400 uppercase">Margem</span>
-              <p className={cn("text-3xl font-black italic", metrics.margin < 30 ? "text-rose-500" : "text-white")}>{metrics.margin.toFixed(1)}%</p>
-            </div>
-            <div className="relative z-10 text-right">
-              <button disabled={loading} type="submit" className="btn-vitalle w-full flex items-center justify-center gap-4">
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "REGISTRAR PEÇA"}
-              </button>
+            <div className="bg-slate-900 rounded-[1.5rem] p-6 text-white space-y-4 shadow-xl">
+              <Label className="text-[10px] font-black uppercase text-magenta">Financeiro</Label>
+              <div>
+                <span className="text-[9px] text-slate-400 block mb-1 uppercase">Custo de Fábrica</span>
+                <input type="number" step="0.01" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="bg-white/10 w-full h-10 rounded-lg px-3 font-bold text-white outline-none focus:ring-1 ring-magenta" />
+              </div>
+              <div>
+                <span className="text-[9px] text-magenta block mb-1 uppercase">Preço de Venda</span>
+                <input type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="bg-white/10 w-full h-10 rounded-lg px-3 font-bold text-magenta outline-none focus:ring-1 ring-magenta" />
+              </div>
+              <div className="pt-2 border-t border-white/5">
+                <p className="text-[9px] text-slate-500 uppercase">Lucro Líquido</p>
+                <p className="text-xl font-black text-green-400">{formatPriceDisplay(metrics.net_profit_cents)}</p>
+              </div>
+              <Button type="submit" disabled={loading} className="w-full bg-magenta hover:bg-magenta/90 text-white font-black uppercase italic text-[10px] h-11 rounded-xl">
+                {loading ? <Loader2 className="animate-spin" /> : editingId ? "ATUALIZAR PEÇA" : "CONFIRMAR CADASTRO"}
+              </Button>
             </div>
           </div>
         </form>
       )}
 
-      {/* GALERIA DE PEÇAS VITALLE (Sempre visível) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {loadingProducts ? (
-          <div className="col-span-full py-20 text-center animate-pulse font-black text-slate-300 uppercase tracking-[0.5em]">
-            Sincronizando Coleção...
-          </div>
-        ) : products.length === 0 ? (
-          <div className="col-span-full py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-            <p className="text-slate-400 italic font-medium">Nenhuma peça na vitrine virtual.</p>
-          </div>
-        ) : (
-          products.map((item) => (
-            <div key={item.id} className="group bg-white rounded-[2rem] overflow-hidden shadow-xl hover:shadow-2xl transition-all border border-slate-100 relative">
-              <div className="absolute top-4 left-4 z-10">
-              <span className="bg-magenta/90 backdrop-blur-md text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
-                  {item?.category || 'Peça Luxo'}
-                </span>
-              </div>
-
-              <div className="aspect-[3/4] overflow-hidden bg-slate-100">
-                {item?.image_url ? (
-                  <img src={item.image_url} alt={item?.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-300">
-                    <ImageIcon className="h-12 w-12" />
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-black text-slate-900 uppercase text-sm leading-tight">{item.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">{item.brand}</p>
-                  </div>
-                  <p className="font-black text-magenta italic">{formatPriceDisplay(item.sell_price_cents)}</p>
-                </div>
-                
-                <div className="pt-3 border-t border-slate-50 flex justify-between items-center text-[10px] font-black uppercase">
-                  <span className="text-slate-400">Estoque: <span className="text-slate-900">{item.stock_quantity || 0} un</span></span>
-                  <button className="text-blue-500 hover:text-magenta transition-colors"><Edit3 className="h-4 w-4"/></button>
-                </div>
-              </div>
+          <div className="col-span-full text-center py-20 animate-pulse text-slate-300 font-black italic">SINCRONIZANDO ESTOQUE...</div>
+        ) : products.map((item) => (
+          <div key={item.id} className="group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all relative">
+            <button onClick={() => handleEdit(item)} className="absolute top-3 right-3 z-20 bg-white/90 backdrop-blur p-2 rounded-full shadow-md text-slate-400 hover:text-magenta transition-all opacity-0 group-hover:opacity-100">
+              <Edit3 size={14} />
+            </button>
+            <div className="aspect-[3/4] bg-slate-50 overflow-hidden">
+              {item.image_url ? <img src={item.image_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-200"><ImageIcon /></div>}
             </div>
-          ))
-        )}
+            <div className="p-4">
+              <p className="text-[9px] font-black text-magenta uppercase tracking-tighter mb-1">{item.category || 'VITALLE'}</p>
+              <h4 className="font-bold text-slate-800 text-xs truncate uppercase">{item.name}</h4>
+              <p className="font-black text-slate-900 mt-2 italic">{formatPriceDisplay(item.sell_price_cents)}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

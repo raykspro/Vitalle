@@ -5,221 +5,152 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { User, Plus, Search, Trash2, Edit } from 'lucide-react';
+import { Search, Trash2, Edit, Save, X } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
+import InputMask from 'react-input-mask';
 
 const Clientes = () => {
-  const supabaseClient = supabase;
   const { user } = useUser();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '', phone: '', email: '', notes: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const initialForm = { 
+    name: '', cpf: '', phone: '', email: '', 
+    cep: '', address_street: '', address_number: '', 
+    address_complement: '', neighborhood: '', city: '', notes: '' 
+  };
+  const [formData, setFormData] = useState(initialForm);
 
-  useEffect(() => {
-    loadCustomers();
-  }, []);
+  useEffect(() => { loadCustomers(); }, []);
 
   async function loadCustomers() {
     setLoading(true);
-    try {
-      const { data } = await supabase.from('customers').select('*').order('name');
-      setCustomers(data || []);
-    } catch (error) {
-      console.error('Erro:', error);
-    } finally {
-      setLoading(false);
-    }
+    const { data } = await supabase.from('customers').select('*').order('name');
+    setCustomers(data || []);
+    setLoading(false);
   }
 
-  const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone.includes(searchTerm)
-  );
+  const handleCepBlur = async (e) => {
+    const cep = e.target.value.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setFormData(p => ({ ...p, address_street: data.logradouro, neighborhood: data.bairro, city: data.localidade }));
+      }
+    } catch (err) { console.error(err); }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingId) {
-        const { error } = await supabase
-          .from('customers')
-          .update({ ...formData })
-          .eq('id', editingId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('customers')
-          .insert({ ...formData, created_by: user.id });
-        if (error) throw error;
-      }
-      setFormData({ name: '', phone: '', email: '', notes: '' });
+      const payload = { ...formData, created_by: user.id };
+      const { error } = editingId 
+        ? await supabase.from('customers').update(payload).eq('id', editingId)
+        : await supabase.from('customers').insert(payload);
+      
+      if (error) throw error;
+      setFormData(initialForm);
       setEditingId(null);
       loadCustomers();
-    } catch (error) {
-      alert('Erro: ' + error.message);
-    }
+    } catch (error) { alert('Erro ao salvar: ' + error.message); }
   };
 
-  const handleEdit = (customer) => {
-    setEditingId(customer.id);
-    setFormData(customer);
-  };
-
-  const handleDelete = async (id) => {
-    if (confirm('Confirma exclusão?')) {
-      const { error } = await supabase.from('customers').delete().eq('id', id);
-      if (!error) loadCustomers();
-    }
-  };
-
-  if (loading) return <div>Carregando...</div>;
+  if (loading) return <div className="p-12 font-black italic animate-pulse text-[#D946EF] text-center">SINCRONIZANDO...</div>;
 
   return (
-    <div className="space-y-10">
-      <header>
-        <div className="h-1.5 w-20 bg-[#D946EF] mb-3 rounded-full" />
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Clientes</h1>
-        <p className="text-slate-500 font-medium italic">Gerencie sua base de clientes VIP.</p>
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      <header className="flex items-center justify-between px-2">
+        <div>
+          <div className="h-1 w-8 bg-[#D946EF] mb-2 rounded-full" />
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">Clientes VIP</h1>
+        </div>
       </header>
 
-      {/* Search */}
-      <Input 
-        placeholder="Pesquisar por nome ou telefone..." 
-        value={searchTerm} 
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="rounded-[2.5rem] shadow-xl max-w-md"
-      />
+      <Card className="border-0 shadow-sm rounded-3xl overflow-hidden bg-white border border-slate-100">
+        <div className="bg-slate-900 py-3 px-6 flex justify-between items-center">
+          <span className="text-white text-[10px] font-bold uppercase tracking-widest italic">
+            {editingId ? 'Editando Registro' : 'Novo Cadastro'}
+          </span>
+          {editingId && <X className="text-white size-4 cursor-pointer" onClick={() => {setEditingId(null); setFormData(initialForm);}} />}
+        </div>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Nome</Label>
+                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="rounded-xl border-none bg-slate-50 h-10" required />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">CPF</Label>
+                <InputMask mask="999.999.999-99" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})}>
+                  {(inputProps) => <Input {...inputProps} className="rounded-xl border-none bg-slate-50 h-10" placeholder="000.000.000-00" />}
+                </InputMask>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">WhatsApp</Label>
+                <InputMask mask="(99) 9 9999-9999" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})}>
+                  {(inputProps) => <Input {...inputProps} className="rounded-xl border-none bg-slate-50 h-10" placeholder="(00) 0 0000-0000" />}
+                </InputMask>
+              </div>
+            </div>
 
-      {/* Form */}
-      <Card className="border-0 shadow-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl font-black uppercase tracking-tight">
-            {editingId ? 'Editar Cliente' : 'Novo Cliente'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label>Nome Completo</Label>
-                <Input 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="rounded-[2.5rem]"
-                  required
-                />
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 grid grid-cols-2 md:grid-cols-6 gap-3">
+              <div className="md:col-span-1">
+                <Label className="text-[9px] font-bold uppercase text-slate-400">CEP</Label>
+                <InputMask mask="99999-999" value={formData.cep} onChange={e => setFormData({...formData, cep: e.target.value})} onBlur={handleCepBlur}>
+                  {(inputProps) => <Input {...inputProps} className="h-9 rounded-lg border-slate-200 bg-white" />}
+                </InputMask>
               </div>
-              <div>
-                <Label>Telefone/WhatsApp</Label>
-                <Input 
-                  value={formData.phone} 
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="rounded-[2.5rem]"
-                />
+              <div className="md:col-span-3">
+                <Label className="text-[9px] font-bold uppercase text-slate-400">Rua</Label>
+                <Input value={formData.address_street} onChange={e => setFormData({...formData, address_street: e.target.value})} className="h-9 rounded-lg border-slate-200 bg-white" />
+              </div>
+              <div className="md:col-span-2">
+                <Label className="text-[9px] font-bold uppercase text-slate-400">Nº / Comp</Label>
+                <Input value={formData.address_number} onChange={e => setFormData({...formData, address_number: e.target.value})} className="h-9 rounded-lg border-slate-200 bg-white" />
               </div>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label>Email</Label>
-                <Input 
-                  type="email"
-                  value={formData.email} 
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="rounded-[2.5rem]"
-                />
-              </div>
-              <div>
-                <Label>Notas</Label>
-                <Input 
-                  value={formData.notes} 
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  className="rounded-[2.5rem]"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Button type="submit" className="flex-1 rounded-[2.5rem] bg-[#D946EF] shadow-xl">
-                {editingId ? <Edit className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                {editingId ? 'Atualizar' : 'Salvar Cliente'}
+
+            <div className="flex justify-end pt-2">
+              <Button type="submit" className="bg-[#D946EF] hover:bg-[#C026D3] rounded-xl px-10 h-10 font-black uppercase italic text-[11px] shadow-md shadow-purple-100 w-fit">
+                <Save className="w-3.5 h-3.5 mr-2" /> {editingId ? 'Atualizar' : 'Salvar'}
               </Button>
-              {editingId && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    setEditingId(null);
-                    setFormData({ name: '', phone: '', email: '', notes: '' });
-                  }}
-                  className="rounded-[2.5rem]"
-                >
-                  Cancelar
-                </Button>
-              )}
             </div>
           </form>
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card className="border-0 shadow-2xl overflow-hidden">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-xl font-black uppercase tracking-tight">Lista de Clientes ({filteredCustomers.length})</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCustomers.map((customer) => (
-                <TableRow key={customer.id}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell>{customer.phone}</TableCell>
-                  <TableCell className="text-slate-500">{customer.email || '—'}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleEdit(customer)}
-                        className="rounded-[2.5rem] h-8"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        onClick={() => handleDelete(customer.id)}
-                        className="rounded-[2.5rem] h-8"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {filteredCustomers.length === 0 && (
-            <div className="p-8 text-center text-slate-500">
-              <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum cliente encontrado</p>
+      <Card className="border-0 shadow-sm rounded-3xl overflow-hidden border border-slate-100">
+        <div className="p-4 bg-white border-b flex justify-between items-center">
+            <h3 className="text-[10px] font-black uppercase italic text-slate-400 tracking-widest">Base VIP</h3>
+            <div className="relative w-40">
+              <Search className="absolute left-3 top-2 text-slate-300" size={12} />
+              <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8 h-8 rounded-full bg-slate-50 border-none text-[10px]" />
             </div>
-          )}
-        </CardContent>
+        </div>
+        <Table>
+          <TableBody>
+            {customers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((c) => (
+              <TableRow key={c.id} className="hover:bg-slate-50/50 border-slate-50">
+                <TableCell className="py-3">
+                  <p className="font-bold text-slate-800 text-sm">{c.name}</p>
+                  <p className="text-[10px] text-[#D946EF] font-medium uppercase italic">{c.phone}</p>
+                </TableCell>
+                <TableCell className="text-right py-3">
+                  <Button size="icon" variant="ghost" onClick={() => {setEditingId(c.id); setFormData(c); window.scrollTo(0,0);}} className="h-8 w-8 text-slate-300 hover:text-[#D946EF]"><Edit size={14}/></Button>
+                  <Button size="icon" variant="ghost" onClick={async () => {if(confirm('Remover?')){await supabase.from('customers').delete().eq('id', c.id); loadCustomers();}}} className="h-8 w-8 text-slate-300 hover:text-red-500"><Trash2 size={14}/></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );
 };
 
 export default Clientes;
-
