@@ -66,7 +66,7 @@ const Clientes = () => {
       <header className="flex items-center justify-between px-2">
         <div>
           <div className="h-1 w-8 bg-[#D946EF] mb-2 rounded-full" />
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">Clientes VIP</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">Clientes</h1>
         </div>
       </header>
 
@@ -126,7 +126,7 @@ const Clientes = () => {
 
       <Card className="border-0 shadow-sm rounded-3xl overflow-hidden border border-slate-100">
         <div className="p-4 bg-white border-b flex justify-between items-center">
-            <h3 className="text-[10px] font-black uppercase italic text-slate-400 tracking-widest">Base VIP</h3>
+            <h3 className="text-[10px] font-black uppercase italic text-slate-400 tracking-widest">Clientes</h3>
             <div className="relative w-40">
               <Search className="absolute left-3 top-2 text-slate-300" size={12} />
               <Input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8 h-8 rounded-full bg-slate-50 border-none text-[10px]" />
