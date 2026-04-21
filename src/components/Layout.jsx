@@ -30,8 +30,8 @@ const navigation = [
     label: "CONTATOS", 
     icon: Users,
     children: [
-      { to: "/clientes", label: "Clientes" },
-      { to: "/fornecedores", label: "Fornecedores" }
+{ to: "/customers", label: "Customers" },
+      { to: "/suppliers", label: "Suppliers" }
     ]
   },
   { to: "/ordens-compra", label: "ORDENS DE COMPRA", icon: Truck },

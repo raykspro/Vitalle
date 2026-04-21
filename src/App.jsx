@@ -13,8 +13,8 @@ import Stock from './pages/Stock';
 import PurchaseOrder from './pages/PurchaseOrder'; 
 import Login from './pages/Login';
 import MobileSales from './pages/MobileSales'; // SUA TELA DE ELITE
-import Clientes from './pages/Clientes';
-import Fornecedores from './pages/Fornecedores';
+import Customers from './pages/Customers';
+import Suppliers from './pages/Suppliers';
 import Configuracoes from './pages/Configuracoes';
 import { PWAProvider, usePWA } from './lib/PWAContext';
 
@@ -44,8 +44,8 @@ function AppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
           <Route path="/stock" element={<Stock />} />
-          <Route path="/clientes" element={<Clientes />} />
-          <Route path="/fornecedores" element={<Fornecedores />} />
+<Route path="/customers" element={<Customers />} />
+          <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/finance" element={<Finance />} />
           
           {/* SUB-ROTAS FINANCEIRAS */}
@@ -54,7 +54,7 @@ function AppContent() {
           <Route path="/finance/receivables" element={<FinanceReceivables />} />
           <Route path="/finance/commissions" element={<FinanceCommissions />} />
           
-          <Route path="/ordens-compra" element={<PurchaseOrder />} />
+<Route path="/purchase-orders" element={<PurchaseOrder />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
         </Route>
       </Route>

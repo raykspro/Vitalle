@@ -18,15 +18,13 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/produtos", label: "Produtos", icon: Package },
-  { to: "/estoque", label: "Estoque", icon: Shirt },
-  { to: "/clientes", label: "Clientes", icon: Users },
-  { to: "/fornecedores", label: "Fornecedores", icon: Truck },
-  { to: "/vendas", label: "Vendas", icon: ShoppingCart },
-  { to: "/notas-fiscais", label: "Notas Fiscais", icon: FileText },
-  { to: "/pagamentos", label: "Financeiro", icon: Wallet },
-  { to: "/historico", label: "Histórico", icon: History },
-  { to: "/configuracoes", label: "Configurações", icon: Settings },
+  { to: "/products", label: "Products", icon: Package },
+  { to: "/stock", label: "Stock", icon: Shirt },
+  { to: "/customers", label: "Customers", icon: Users },
+  { to: "/suppliers", label: "Suppliers", icon: Truck },
+  { to: "/vendas", label: "Sales", icon: ShoppingCart },
+  { to: "/finance", label: "Finance", icon: Wallet },
+  { to: "/configuracoes", label: "Settings", icon: Settings },
 ];
 
 export default function Layout() {
