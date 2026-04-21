@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useIsMobile } from '../hooks/use-mobile';
-import { LayoutContext } from '../components/ui/Layout'; // Importação Corrigida
+// CORREÇÃO MESTRE: Importando do caminho correto onde o contexto foi definido no Layout.jsx
+import { LayoutContext } from '../components/Layout'; 
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -9,188 +10,242 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Badge } from '../components/ui/badge';
 import { usePWA } from '../lib/PWAContext';
 import { 
-  ShoppingCart, Plus, Minus, Search, CheckCircle2, 
-  Download, TrendingUp 
+  ShoppingCart, Plus, Minus, Search, 
+  Download, TrendingUp, AlertCircle, Menu 
 } from 'lucide-react';
+import { toast } from "sonner";
 
 const MobileSales = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { setMobileOpen } = useContext(LayoutContext);
+  
+  // CORREÇÃO MESTRE: Pegando a função de abrir o menu do Layout
+  const layoutContext = useContext(LayoutContext);
+  const setMobileOpen = layoutContext?.setMobileOpen;
+
   const { installPrompt } = usePWA();
+  
   const [isSaleOpen, setIsSaleOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [dbError, setDbError] = useState(false);
   const [stats, setStats] = useState({ today: 0, items: 0 });
 
   useEffect(() => {
-    if (isMobile && location.pathname === '/vendas') {
+    // Se o usuário veio de um redirecionamento mobile, garantimos que o menu feche
+    if (isMobile && setMobileOpen) {
       setMobileOpen(false);
     }
     fetchProducts();
-    // Simulação de stats (depois pode vir do banco)
-    setStats({ today: 0.00, items: 0 });
-  }, [isMobile, location.pathname, setMobileOpen]);
+    fetchTodayStats();
+  }, [location, isMobile, setMobileOpen]);
 
-  const fetchProducts = async () => {
-    // Ajustado para a tabela 'products' em inglês
+  async function fetchProducts() {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'Ativo')
+        .order('name');
+      
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (err) {
+      console.error("Erro ao carregar produtos:", err);
+      setDbError(true);
+    }
+  }
+
+  async function fetchTodayStats() {
+    const today = new Date().toISOString().split('T')[0];
     const { data } = await supabase
-      .from('products')
-      .select('*')
-      .gt('stock_current', 0);
-    setProducts(data || []);
-    setStats(prev => ({ ...prev, items: data?.length || 0 }));
-  };
+      .from('sales')
+      .select('total_amount')
+      .gte('created_at', today);
+    
+    const total = data?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0;
+    setStats({ today: total, items: data?.length || 0 });
+  }
 
   const addToCart = (product) => {
-    const existing = cart.find(item => item.id === product.id);
-    if (existing) {
-      setCart(cart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
-    } else {
-      setCart([...cart, { ...product, qty: 1 }]);
-    }
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+      }
+      return [...prev, { ...product, qty: 1 }];
+    });
+    toast.success(`${product.name} adicionado!`);
   };
 
   const updateQty = (id, delta) => {
-    setCart(cart.map(item => 
-      item.id === id ? { ...item, qty: Math.max(0, item.qty + delta) } : item
-    ).filter(i => i.qty > 0));
+    setCart(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(0, item.qty + delta);
+        return { ...item, qty: newQty };
+      }
+      return item;
+    }).filter(item => item.qty > 0));
   };
 
-  const totalSale = cart.reduce((acc, item) => {
-    return acc + (item.price_sale * item.qty);
-  }, 0);
+  const totalSale = cart.reduce((acc, item) => acc + (item.sell_price * item.qty), 0);
 
   const finalizeSale = async () => {
     setLoading(true);
     try {
-      // Registrar venda e atualizar estoque
-      for (const item of cart) {
-        await supabase
-          .from('products')
-          .update({ stock_current: item.stock_current - item.qty })
-          .eq('id', item.id);
-      }
-      
-      alert("Venda Finalizada, Mestre!");
+      // Lógica de inserção no Supabase (ajuste conforme sua tabela)
+      const { error } = await supabase.from('sales').insert([{
+        total_amount: totalSale,
+        items: cart,
+        created_at: new Date()
+      }]);
+
+      if (error) throw error;
+
+      toast.success("VENDA FINALIZADA COM SUCESSO!");
       setCart([]);
       setIsSaleOpen(false);
-      fetchProducts();
-    } catch (e) {
-      alert("Erro: " + e.message);
+      fetchTodayStats();
+    } catch (err) {
+      toast.error("Erro ao salvar venda.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.category?.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="w-full bg-[#F8FAFC] min-h-screen flex flex-col p-0">
-      {/* Header Estilo Boutique */}
-      <div className="p-6 bg-white border-b border-slate-100 rounded-b-[2.5rem] shadow-sm max-w-md mx-auto w-full">
-        <div className="flex justify-between items-center mb-6">
+    <div className="flex flex-col h-screen bg-[#F8FAFC] overflow-hidden">
+      {/* HEADER PDV */}
+      <div className="p-4 bg-white border-b flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          {/* Botão para abrir o menu lateral que o senhor queria */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden text-[#D946EF]"
+            onClick={() => setMobileOpen?.(true)}
+          >
+            <Menu size={24} />
+          </Button>
           <div>
-            <h1 className="text-2xl font-black italic text-slate-800 uppercase tracking-tighter">VITALLE NEXUS</h1>
-            <Badge className="bg-pink-500/10 text-[#D946EF] border-none">BOUTIQUE MESTRE</Badge>
+            <h1 className="text-xl font-black italic text-[#D946EF] tracking-tighter">PDV VITALLE</h1>
+            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Operação de Vendas</p>
           </div>
-          {installPrompt && (
-            <Button onClick={() => installPrompt.prompt()} variant="ghost" className="rounded-full text-[#D946EF]">
-              <Download size={24} className="animate-bounce" />
-            </Button>
-          )}
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-slate-900 p-4 rounded-3xl text-white">
-            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Vendas Hoje</p>
-            <p className="text-xl font-black italic">R$ {stats.today.toFixed(2)}</p>
-          </div>
-          <div className="bg-[#D946EF] p-4 rounded-3xl text-white">
-            <p className="text-[10px] uppercase font-bold text-pink-200 tracking-widest">Itens Loja</p>
-            <p className="text-xl font-black italic">{stats.items} un</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Feed de Atividade */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 max-w-md mx-auto w-full">
-        <h2 className="text-xs font-black uppercase text-slate-400 italic flex items-center gap-2">
-          <TrendingUp size={14} /> Atividade Recente
-        </h2>
-        {/* Placeholder para vendas recentes */}
-        <div className="bg-white p-6 rounded-2xl text-center border border-dashed border-slate-200 text-slate-400 text-sm">
-          Nenhuma venda registrada agora.
-        </div>
-      </div>
-
-      {/* Botão de Ação Flutuante */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pb-[env(safe-area-inset-bottom)] flex justify-center">
-        <Button 
-          onClick={() => setIsSaleOpen(true)}
-          className="w-full max-w-md h-20 rounded-[2rem] bg-[#D946EF] hover:bg-[#C026D3] shadow-2xl shadow-pink-200 text-xl font-black uppercase italic tracking-tighter"
-        >
-          <ShoppingCart className="mr-2" /> NOVA VENDA
-        </Button>
-      </div>
-
-      {/* Checkout Modal */}
-      <Dialog open={isSaleOpen} onOpenChange={setIsSaleOpen}>
-        <DialogContent className="sm:max-w-md h-[100dvh] flex flex-col p-0 rounded-none border-none">
-          <div className="p-8 space-y-6 flex-1 overflow-y-auto bg-white">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-black uppercase italic text-slate-800">Checkout</DialogTitle>
-            </DialogHeader>
-
-            <div className="relative">
-              <Search className="absolute left-4 top-4 text-slate-400" size={20} />
-              <Input 
-                placeholder="Buscar produto..." 
-                className="pl-12 h-14 rounded-2xl bg-slate-100 border-none text-lg"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-
-            {search && (
-              <div className="space-y-2">
-                {products.filter(p => p.name.toLowerCase().includes(search.toLowerCase())).map(p => (
-                  <div key={p.id} onClick={() => { addToCart(p); setSearch(''); }} className="p-4 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100 active:bg-slate-100 transition-colors">
-                    <div>
-                      <p className="text-sm font-bold uppercase">{p.name}</p>
-                      <p className="text-[10px] text-[#D946EF] font-black uppercase tracking-widest">R$ {p.price_sale.toFixed(2)}</p>
-                    </div>
-                    <Plus size={20} className="text-[#D946EF]" />
-                  </div>
-                ))}
-              </div>
+        <div className="flex items-center gap-2">
+          {installPrompt && (
+            <Button onClick={installPrompt} variant="outline" size="sm" className="rounded-full border-[#D946EF] text-[#D946EF] text-[10px] font-black h-8">
+              <Download size={14} className="mr-1" /> INSTALAR
+            </Button>
+          )}
+          <div className="relative" onClick={() => setIsSaleOpen(true)}>
+            <ShoppingCart className="text-slate-800" size={24} />
+            {cart.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-[#D946EF] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+                {cart.length}
+              </span>
             )}
+          </div>
+        </div>
+      </div>
 
+      {/* SEARCH & STATS */}
+      <div className="p-4 space-y-4 overflow-y-auto pb-32">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+            <TrendingUp size={16} className="text-[#D946EF] mb-2" />
+            <p className="text-[10px] font-black text-slate-400 uppercase">Hoje</p>
+            <p className="text-lg font-black italic">R$ {stats.today.toFixed(2)}</p>
+          </div>
+          <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+            <ShoppingCart size={16} className="text-[#D946EF] mb-2" />
+            <p className="text-[10px] font-black text-slate-400 uppercase">Pedidos</p>
+            <p className="text-lg font-black italic">{stats.items}</p>
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <Input 
+            placeholder="Buscar produto ou categoria..." 
+            className="h-14 pl-12 rounded-2xl bg-white border-slate-100 font-medium"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        {/* LISTA DE PRODUTOS */}
+        <div className="grid grid-cols-1 gap-3">
+          {filteredProducts.map(product => (
+            <div key={product.id} className="bg-white p-3 rounded-2xl border border-slate-50 flex items-center gap-4 shadow-sm active:scale-95 transition-transform" onClick={() => addToCart(product)}>
+              <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden">
+                {product.image_url ? (
+                  <img src={product.image_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-200"><ShoppingCart size={20}/></div>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-black text-[#D946EF] uppercase tracking-tighter">{product.category}</p>
+                <h3 className="font-bold text-slate-800 leading-tight">{product.name}</h3>
+                <p className="font-black text-slate-900 italic">R$ {product.sell_price?.toFixed(2)}</p>
+              </div>
+              <Button size="icon" className="rounded-xl bg-slate-50 text-slate-400 hover:bg-[#D946EF] hover:text-white transition-colors">
+                <Plus size={20} />
+              </Button>
+            </div>
+          ))}
+          {dbError && (
+            <div className="p-8 text-center space-y-3">
+              <AlertCircle size={40} className="mx-auto text-red-400" />
+              <p className="text-slate-500 font-bold italic">Erro ao conectar com o banco.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* DRAWER DO CARRINHO */}
+      <Dialog open={isSaleOpen} onOpenChange={setIsSaleOpen}>
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden rounded-t-[2.5rem] border-none">
+          <div className="p-6 bg-white max-h-[70vh] overflow-y-auto">
+            <DialogHeader className="mb-6">
+              <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Carrinho</DialogTitle>
+            </DialogHeader>
+            
             <div className="space-y-4">
               {cart.map(item => (
-                <div key={item.id} className="flex justify-between items-center bg-white border border-slate-100 p-4 rounded-2xl shadow-sm">
+                <div key={item.id} className="flex items-center gap-3">
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-slate-700 uppercase leading-tight">{item.name}</p>
-                    <p className="text-xs text-[#D946EF] font-black italic">R$ {item.price_sale.toFixed(2)}</p>
+                    <p className="font-bold text-sm">{item.name}</p>
+                    <p className="text-xs font-black text-[#D946EF]">R$ {item.sell_price?.toFixed(2)}</p>
                   </div>
-                  <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-1">
-                    <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Minus size={14}/></button>
-                    <span className="font-black w-4 text-center">{item.qty}</span>
-                    <button onClick={() => addToCart(item)} className="w-8 h-8 flex items-center justify-center bg-[#D946EF] rounded-lg text-white shadow-sm"><Plus size={14}/></button>
+                  <div className="flex items-center gap-2 bg-slate-50 rounded-xl p-1">
+                    <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm"><Minus size={12}/></button>
+                    <span className="font-black text-xs w-4 text-center">{item.qty}</span>
+                    <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center bg-[#D946EF] rounded-lg text-white shadow-sm"><Plus size={12}/></button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="p-6 sm:p-10 bg-slate-900 space-y-6 pb-[env(safe-area-inset-bottom)]">
+          <div className="p-6 bg-slate-900 space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-slate-400 uppercase font-black text-xs">Total</span>
-              <span className="text-3xl font-black text-white italic">R$ {totalSale.toFixed(2)}</span>
+              <span className="text-slate-400 uppercase font-black text-[10px]">Total Venda</span>
+              <span className="text-2xl font-black text-white italic">R$ {totalSale.toFixed(2)}</span>
             </div>
             <Button 
               disabled={cart.length === 0 || loading}
               onClick={finalizeSale}
-              className="w-full h-16 rounded-2xl bg-[#D946EF] hover:bg-[#C026D3] text-lg font-black uppercase italic shadow-2xl shadow-pink-500/20"
+              className="w-full h-14 rounded-2xl bg-[#D946EF] hover:bg-[#C026D3] text-base font-black uppercase italic"
             >
               {loading ? 'PROCESSANDO...' : 'FINALIZAR VENDA'}
             </Button>

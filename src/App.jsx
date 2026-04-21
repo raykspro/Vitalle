@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom';
 import Layout from './components/Layout';
 import AuthGuard from './components/AuthGuard';
 import Dashboard from './pages/Dashboard';
@@ -12,7 +12,7 @@ import Products from './pages/Products';
 import Stock from './pages/Stock';
 import PurchaseOrder from './pages/PurchaseOrder'; 
 import Login from './pages/Login';
-import MobileSales from './pages/MobileSales'; // SUA TELA DE ELITE
+import MobileSales from './pages/MobileSales'; 
 import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
 import Configuracoes from './pages/Configuracoes';
@@ -32,33 +32,37 @@ function AppContent() {
 
   return (
     <Routes>
+      {/* Rota Pública */}
       <Route path="/login" element={<Login />} />
       
-      {/* MESTRE: Sistema inicia em Vendas para agilidade total */}
+      {/* Redirecionamento Inicial: Direto para o PDV de Elite */}
       <Route path="/" element={<Navigate to="/vendas" replace />} />
 
+      {/* Rotas Protegidas */}
       <Route element={<AuthGuard />}>
+        {/* O Layout envolve todas as rotas internas para fornecer o Contexto */}
         <Route element={<Layout />}>
-          {/* SINCRONIZADO COM OS LINKS DA SIDEBAR (VITALLE NAV) */}
           <Route path="/vendas" element={<MobileSales />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
           <Route path="/stock" element={<Stock />} />
-<Route path="/customers" element={<Customers />} />
+          <Route path="/customers" element={<Customers />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/finance" element={<Finance />} />
           
-          {/* SUB-ROTAS FINANCEIRAS */}
+          {/* Sub-rotas Financeiras */}
           <Route path="/finance/cashflow" element={<FinanceCashFlow />} />
           <Route path="/finance/payables" element={<FinancePayables />} />
           <Route path="/finance/receivables" element={<FinanceReceivables />} />
           <Route path="/finance/commissions" element={<FinanceCommissions />} />
           
-<Route path="/purchase-orders" element={<PurchaseOrder />} />
+          {/* Rota de Ordem de Compra Corrigida */}
+          <Route path="/purchase-orders" element={<PurchaseOrder />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
         </Route>
       </Route>
 
+      {/* Fallback de Segurança */}
       <Route path="*" element={<Navigate to="/vendas" replace />} />
     </Routes>
   );
@@ -66,9 +70,11 @@ function AppContent() {
 
 function App() {
   return (
-    <PWAProvider>
-      <AppContent />
-    </PWAProvider>
+    <BrowserRouter>
+      <PWAProvider>
+        <AppContent />
+      </PWAProvider>
+    </BrowserRouter>
   );
 }
 
