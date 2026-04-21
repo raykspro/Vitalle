@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom';
 import Layout from './components/Layout';
 import AuthGuard from './components/AuthGuard';
 import Dashboard from './pages/Dashboard';
-import Finance from './pages/Finance';
+// Import removido: Finance (Arquivo deletado)
 import FinanceCashFlow from './pages/FinanceCashFlow';
 import FinancePayables from './pages/FinancePayables';
 import FinanceReceivables from './pages/FinanceReceivables';
@@ -40,7 +40,7 @@ function AppContent() {
 
       {/* Rotas Protegidas */}
       <Route element={<AuthGuard />}>
-        {/* O Layout envolve todas as rotas internas para fornecer o Contexto */}
+        {/* O Layout envolve todas as rotas internas */}
         <Route element={<Layout />}>
           <Route path="/vendas" element={<MobileSales />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -48,15 +48,17 @@ function AppContent() {
           <Route path="/stock" element={<Stock />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/suppliers" element={<Suppliers />} />
-          <Route path="/finance" element={<Finance />} />
           
-          {/* Sub-rotas Financeiras */}
+          {/* Redirecionamento da rota pai de finanças para o Fluxo de Caixa */}
+          <Route path="/finance" element={<Navigate to="/finance/cashflow" replace />} />
+          
+          {/* Sub-rotas Financeiras (Oficiais) */}
           <Route path="/finance/cashflow" element={<FinanceCashFlow />} />
           <Route path="/finance/payables" element={<FinancePayables />} />
           <Route path="/finance/receivables" element={<FinanceReceivables />} />
           <Route path="/finance/commissions" element={<FinanceCommissions />} />
           
-          {/* Rota de Ordem de Compra Corrigida */}
+          {/* Rota de Ordem de Compra */}
           <Route path="/purchase-orders" element={<PurchaseOrder />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
         </Route>
