@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useIsMobile } from '../hooks/use-mobile';
+import LayoutContext from '../lib/LayoutContext';
 import { supabase } from '../lib/supabaseClient';
 import { formatPriceDisplay } from '../lib/formatters';
 import { Button } from '../components/ui/button';
@@ -12,6 +15,9 @@ import {
 } from 'lucide-react';
 
 const MobileSales = () => {
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  const { setMobileOpen } = React.useContext(LayoutContext);
   const { installPrompt } = usePWA();
   const [isSaleOpen, setIsSaleOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -21,9 +27,12 @@ const MobileSales = () => {
   const [stats, setStats] = useState({ today: 0, items: 0 });
 
   useEffect(() => {
+    if (isMobile && location.pathname === '/vendas') {
+      setMobileOpen(false);
+    }
     fetchStock();
     setStats({ today: 1250.80, items: 45 });
-  }, []);
+  }, [isMobile, location.pathname, setMobileOpen]);
 
   const fetchStock = async () => {
     const { data } = await supabase
@@ -75,12 +84,12 @@ const MobileSales = () => {
   };
 
   return (
-    <div className="bg-[#F8FAFC] h-screen flex flex-col overflow-hidden">
+    <div className="w-full box-border mobile-sales-fullscreen bg-[#F8FAFC] min-h-screen flex flex-col overflow-hidden p-0 pt-4 lg:pt-0 lg:p-4">
       {/* Header Fixo e Automático */}
-      <div className="p-6 bg-white border-b border-slate-100 rounded-b-[2.5rem] shadow-sm">
+      <div className="p-4 sm:p-6 bg-white border-b border-slate-100 rounded-b-[2.5rem] shadow-sm max-w-md mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-black italic text-slate-800 uppercase tracking-tighter">VITALLE NEXUS</h1>
+            <h1 className="text-xl sm:text-2xl font-black italic text-slate-800 uppercase tracking-tighter">VITALLE NEXUS</h1>
             <Badge className="bg-green-500/10 text-green-600 border-none">SISTEMA ONLINE</Badge>
           </div>
           {installPrompt && (
@@ -103,12 +112,12 @@ const MobileSales = () => {
       </div>
 
       {/* Feed de Movimentações com Scroll Interno */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-32">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 max-w-md mx-auto">
         <h2 className="text-xs font-black uppercase text-slate-400 italic flex items-center gap-2">
           <TrendingUp size={14} /> Atividade Recente
         </h2>
         {[1, 2, 3, 4, 5].map((_, i) => (
-          <div key={i} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-50 shadow-sm">
+          <div key={i} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-50 shadow-sm w-full">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-[#D946EF]">
                 <CheckCircle2 size={16} />
@@ -121,7 +130,7 @@ const MobileSales = () => {
       </div>
 
       {/* BOTÃO NOVA VENDA - SEMPRE NO ALCANCE DO DEDO */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pb-[env(safe-area-inset-bottom)]">
         <Button 
           onClick={() => setIsSaleOpen(true)}
           className="w-full h-20 rounded-[2rem] bg-[#D946EF] hover:bg-[#C026D3] shadow-2xl shadow-purple-300 text-xl font-black uppercase italic tracking-tighter"
@@ -179,15 +188,15 @@ const MobileSales = () => {
             </div>
           </div>
 
-          <div className="p-10 bg-slate-900 space-y-6">
+          <div className="p-6 sm:p-10 bg-slate-900 space-y-6 pb-[env(safe-area-inset-bottom)]">
             <div className="flex justify-between items-center">
               <span className="text-slate-400 uppercase font-black text-xs">Total</span>
-              <span className="text-3xl font-black text-white italic">R$ {formatPriceDisplay(totalSale)}</span>
+              <span className="text-2xl sm:text-3xl font-black text-white italic">R$ {formatPriceDisplay(totalSale)}</span>
             </div>
             <Button 
               disabled={cart.length === 0 || loading}
               onClick={finalizeSale}
-              className="w-full h-16 rounded-2xl bg-green-500 text-lg font-black uppercase italic"
+              className="w-full h-16 rounded-2xl bg-[#D946EF] hover:bg-[#C026D3] text-lg font-black uppercase italic shadow-2xl shadow-purple-500"
             >
               {loading ? 'PROCESSANDO...' : 'FINALIZAR VENDA'}
             </Button>
