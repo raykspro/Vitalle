@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useIsMobile } from '../hooks/use-mobile';
-// CORREÇÃO MESTRE: Importando do caminho correto onde o contexto foi definido no Layout.jsx
 import { LayoutContext } from '../components/Layout'; 
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Badge } from '../components/ui/badge';
 import { usePWA } from '../lib/PWAContext';
 import { 
   ShoppingCart, Plus, Minus, Search, 
@@ -19,7 +17,6 @@ const MobileSales = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   
-  // CORREÇÃO MESTRE: Pegando a função de abrir o menu do Layout
   const layoutContext = useContext(LayoutContext);
   const setMobileOpen = layoutContext?.setMobileOpen;
 
@@ -34,7 +31,6 @@ const MobileSales = () => {
   const [stats, setStats] = useState({ today: 0, items: 0 });
 
   useEffect(() => {
-    // Se o usuário veio de um redirecionamento mobile, garantimos que o menu feche
     if (isMobile && setMobileOpen) {
       setMobileOpen(false);
     }
@@ -44,29 +40,41 @@ const MobileSales = () => {
 
   async function fetchProducts() {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('status', 'Ativo')
+        .eq('status', 'active') 
         .order('name');
       
       if (error) throw error;
       setProducts(data || []);
+      setDbError(false);
     } catch (err) {
       console.error("Erro ao carregar produtos:", err);
       setDbError(true);
+    } finally {
+      setLoading(false);
     }
   }
 
   async function fetchTodayStats() {
-    const today = new Date().toISOString().split('T')[0];
-    const { data } = await supabase
-      .from('sales')
-      .select('total_amount')
-      .gte('created_at', today);
-    
-    const total = data?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0;
-    setStats({ today: total, items: data?.length || 0 });
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('sales')
+        .select('total_amount')
+        .gte('created_at', today.toISOString());
+      
+      if (error) throw error;
+      
+      const total = data?.reduce((acc, curr) => acc + (curr.total_amount || 0), 0) || 0;
+      setStats({ today: total, items: data?.length || 0 });
+    } catch (err) {
+      console.error("Erro ao carregar estatísticas:", err);
+    }
   }
 
   const addToCart = (product) => {
@@ -90,16 +98,18 @@ const MobileSales = () => {
     }).filter(item => item.qty > 0));
   };
 
-  const totalSale = cart.reduce((acc, item) => acc + (item.sell_price * item.qty), 0);
+  const totalSale = cart.reduce((acc, item) => {
+    const price = (item.sale_price_cents || 0) / 100;
+    return acc + (price * item.qty);
+  }, 0);
 
   const finalizeSale = async () => {
     setLoading(true);
     try {
-      // Lógica de inserção no Supabase (ajuste conforme sua tabela)
       const { error } = await supabase.from('sales').insert([{
         total_amount: totalSale,
         items: cart,
-        created_at: new Date()
+        created_at: new Date().toISOString()
       }]);
 
       if (error) throw error;
@@ -109,6 +119,7 @@ const MobileSales = () => {
       setIsSaleOpen(false);
       fetchTodayStats();
     } catch (err) {
+      console.error(err);
       toast.error("Erro ao salvar venda.");
     } finally {
       setLoading(false);
@@ -117,7 +128,7 @@ const MobileSales = () => {
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category?.toLowerCase().includes(search.toLowerCase())
+    (p.category && p.category.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -125,7 +136,6 @@ const MobileSales = () => {
       {/* HEADER PDV */}
       <div className="p-4 bg-white border-b flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          {/* Botão para abrir o menu lateral que o senhor queria */}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -146,7 +156,7 @@ const MobileSales = () => {
               <Download size={14} className="mr-1" /> INSTALAR
             </Button>
           )}
-          <div className="relative" onClick={() => setIsSaleOpen(true)}>
+          <div className="relative cursor-pointer" onClick={() => setIsSaleOpen(true)}>
             <ShoppingCart className="text-slate-800" size={24} />
             {cart.length > 0 && (
               <span className="absolute -top-2 -right-2 bg-[#D946EF] text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white animate-bounce">
@@ -184,8 +194,17 @@ const MobileSales = () => {
 
         {/* LISTA DE PRODUTOS */}
         <div className="grid grid-cols-1 gap-3">
-          {filteredProducts.map(product => (
-            <div key={product.id} className="bg-white p-3 rounded-2xl border border-slate-50 flex items-center gap-4 shadow-sm active:scale-95 transition-transform" onClick={() => addToCart(product)}>
+          {loading ? (
+             <div className="p-12 text-center">
+                <div className="animate-spin h-8 w-8 border-4 border-[#D946EF] border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-slate-400 font-bold italic text-sm">Sincronizando estoque...</p>
+             </div>
+          ) : filteredProducts.map(product => (
+            <div 
+              key={product.id} 
+              className="bg-white p-3 rounded-2xl border border-slate-50 flex items-center gap-4 shadow-sm active:scale-95 transition-transform cursor-pointer" 
+              onClick={() => addToCart(product)}
+            >
               <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden">
                 {product.image_url ? (
                   <img src={product.image_url} alt="" className="w-full h-full object-cover" />
@@ -194,19 +213,27 @@ const MobileSales = () => {
                 )}
               </div>
               <div className="flex-1">
-                <p className="text-[10px] font-black text-[#D946EF] uppercase tracking-tighter">{product.category}</p>
+                <p className="text-[10px] font-black text-[#D946EF] uppercase tracking-tighter">{product.category || 'Geral'}</p>
                 <h3 className="font-bold text-slate-800 leading-tight">{product.name}</h3>
-                <p className="font-black text-slate-900 italic">R$ {product.sell_price?.toFixed(2)}</p>
+                <p className="font-black text-slate-900 italic">R$ {((product.sale_price_cents || 0) / 100).toFixed(2)}</p>
               </div>
               <Button size="icon" className="rounded-xl bg-slate-50 text-slate-400 hover:bg-[#D946EF] hover:text-white transition-colors">
                 <Plus size={20} />
               </Button>
             </div>
           ))}
+
+          {!loading && filteredProducts.length === 0 && !dbError && (
+            <div className="p-12 text-center">
+              <p className="text-slate-400 font-bold italic">Nenhum produto disponível.</p>
+            </div>
+          )}
+
           {dbError && (
             <div className="p-8 text-center space-y-3">
               <AlertCircle size={40} className="mx-auto text-red-400" />
               <p className="text-slate-500 font-bold italic">Erro ao conectar com o banco.</p>
+              <Button variant="outline" onClick={fetchProducts} className="rounded-xl font-bold">Tentar Novamente</Button>
             </div>
           )}
         </div>
@@ -225,7 +252,7 @@ const MobileSales = () => {
                 <div key={item.id} className="flex items-center gap-3">
                   <div className="flex-1">
                     <p className="font-bold text-sm">{item.name}</p>
-                    <p className="text-xs font-black text-[#D946EF]">R$ {item.sell_price?.toFixed(2)}</p>
+                    <p className="text-xs font-black text-[#D946EF]">R$ {((item.sale_price_cents || 0) / 100).toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2 bg-slate-50 rounded-xl p-1">
                     <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm"><Minus size={12}/></button>
