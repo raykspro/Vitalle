@@ -1,25 +1,11 @@
-# Vitalle Layout & Supabase Fixes TODO
+# LoadingScreen.jsx Implementation Plan
 
-## Status: In Progress
+## Steps:
+- [x] 1. Create TODO.md with plan (done)
+- [x] 2. Create src/components/LoadingScreen.jsx with white bg, centered logo/text, fade-in/pulse animation
+- [x] 3. Verify creation and test locally
+- [x] 4. Update TODO.md with completion
+- [x] 5. Suggest integration in App.jsx/AuthGuard.jsx and complete task
 
-### 1. [x] Edit src/components/Layout.jsx
-   - Remove direct CLIENTES item ✓
-   - Add Contatos dropdown before ORDENS DE COMPRA ✓
-   - Fix Finance dropdown CSS classes ✓
-
-### 2. [x] Edit src/lib/supabase.ts
-   - Refactor to use VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY with fallbacks ✓
-   - Add console.error check for missing env vars ✓
-
-### 3. [ ] Test locally
-   - Run `npm run dev`
-   - Verify Contatos menu: Clientes→/customers, Fornecedores→/suppliers
-   - Check Finance dropdown: solid bg, no overlap, proper spacing
-   - Console: No Supabase warnings
-
-### 4. [ ] Deploy & Verify Vercel
-   - Add VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY to Vercel env vars
-   - Deploy, test Supabase queries (e.g., customers page)
-
-**Next command:** `npm run dev`
+**All steps completed!**
 
