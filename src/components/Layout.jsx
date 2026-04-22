@@ -27,17 +27,16 @@ const navigation = [
       { to: "/finance/commissions", label: "Comissões" },
     ]
   },
-
-{
-  id: "contatos",
-  label: "CONTATOS", 
-  icon: Users,
-  children: [
-    { to: "/customers", label: "Clientes" },
-    { to: "/suppliers", label: "Fornecedores" }
-  ]
-},
-  { to: "/purchase-orders", label: "ORDENS DE COMPRA", icon: Truck }, // CORRIGIDO PARA BATER COM APP.JSX
+  {
+    id: "contatos",
+    label: "CONTATOS", 
+    icon: Users,
+    children: [
+      { to: "/customers", label: "Clientes" },
+      { to: "/suppliers", label: "Fornecedores" }
+    ]
+  },
+  { to: "/purchase-orders", label: "ORDENS DE COMPRA", icon: Truck },
   { to: "/configuracoes", label: "AJUSTES", icon: Settings },
 ];
 
@@ -60,10 +59,12 @@ export default function Layout() {
                   <ChevronDown className="h-4 w-4 text-slate-400" />
                 </Button>
               </DropdownMenuTrigger>
-className="w-56 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 shadow-2xl py-2 mt-2 z-[50]"
+              
+              {/* CORREÇÃO AQUI: Tag aberta e classes de design Luxury aplicadas */}
+              <DropdownMenuContent className="w-56 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 shadow-2xl py-2 mt-2 z-[50]">
                 {item.children.map((child) => (
                   <DropdownMenuItem key={child.to} asChild>
-                    <NavLink to={child.to} className="w-full font-bold text-[10px] uppercase p-3 cursor-pointer">
+                    <NavLink to={child.to} className="w-full font-bold text-[10px] uppercase p-3 cursor-pointer hover:bg-slate-50 transition-colors">
                       {child.label}
                     </NavLink>
                   </DropdownMenuItem>
