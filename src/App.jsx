@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom';
+import React, { useEffect, Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom'; // Removido BrowserRouter daqui
 import Layout from './components/Layout';
 import AuthGuard from './components/AuthGuard';
 import Dashboard from './pages/Dashboard';
-// Import removido: Finance (Arquivo deletado)
 import FinanceCashFlow from './pages/FinanceCashFlow';
 import FinancePayables from './pages/FinancePayables';
 import FinanceReceivables from './pages/FinanceReceivables';
@@ -18,10 +17,21 @@ import Suppliers from './pages/Suppliers';
 import Configuracoes from './pages/Configuracoes';
 import { PWAProvider, usePWA } from './lib/PWAContext';
 
+// Loader para feedback visual enquanto o Clerk verifica a sessão
+const PageLoader = () => (
+  <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+    <p className="text-blue-400 font-medium animate-pulse">Iniciando Vitalle...</p>
+  </div>
+);
+
 function AppContent() {
-  const { setInstallPrompt } = usePWA();
+  const pwaContext = usePWA();
+  const setInstallPrompt = pwaContext?.setInstallPrompt;
 
   useEffect(() => {
+    if (!setInstallPrompt) return;
+
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -31,52 +41,50 @@ function AppContent() {
   }, [setInstallPrompt]);
 
   return (
-    <Routes>
-      {/* Rota Pública */}
-      <Route path="/login" element={<Login />} />
-      
-      {/* Redirecionamento Inicial: Direto para o PDV de Elite */}
-      <Route path="/" element={<Navigate to="/vendas" replace />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Rota Pública */}
+        <Route path="/login" element={<Login />} />
+        
+        {/* Redirecionamento Inicial */}
+        <Route path="/" element={<Navigate to="/vendas" replace />} />
 
-      {/* Rotas Protegidas */}
-      <Route element={<AuthGuard />}>
-        {/* O Layout envolve todas as rotas internas */}
-        <Route element={<Layout />}>
-          <Route path="/vendas" element={<MobileSales />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/stock" element={<Stock />} />
-          <Route path="/customers" element={<Customers />} />
-          <Route path="/suppliers" element={<Suppliers />} />
-          
-          {/* Redirecionamento da rota pai de finanças para o Fluxo de Caixa */}
-          <Route path="/finance" element={<Navigate to="/finance/cashflow" replace />} />
-          
-          {/* Sub-rotas Financeiras (Oficiais) */}
-          <Route path="/finance/cashflow" element={<FinanceCashFlow />} />
-          <Route path="/finance/payables" element={<FinancePayables />} />
-          <Route path="/finance/receivables" element={<FinanceReceivables />} />
-          <Route path="/finance/commissions" element={<FinanceCommissions />} />
-          
-          {/* Rota de Ordem de Compra */}
-          <Route path="/purchase-orders" element={<PurchaseOrder />} />
-          <Route path="/configuracoes" element={<Configuracoes />} />
+        {/* Rotas Protegidas pelo AuthGuard */}
+        <Route element={<AuthGuard />}>
+          <Route element={<Layout />}>
+            <Route path="/vendas" element={<MobileSales />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/stock" element={<Stock />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/suppliers" element={<Suppliers />} />
+            
+            {/* Finanças */}
+            <Route path="/finance" element={<Navigate to="/finance/cashflow" replace />} />
+            <Route path="/finance/cashflow" element={<FinanceCashFlow />} />
+            <Route path="/finance/payables" element={<FinancePayables />} />
+            <Route path="/finance/receivables" element={<FinanceReceivables />} />
+            <Route path="/finance/commissions" element={<FinanceCommissions />} />
+            
+            {/* Operacional */}
+            <Route path="/purchase-orders" element={<PurchaseOrder />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
+          </Route>
         </Route>
-      </Route>
 
-      {/* Fallback de Segurança */}
-      <Route path="*" element={<Navigate to="/vendas" replace />} />
-    </Routes>
+        {/* Fallback de Segurança */}
+        <Route path="*" element={<Navigate to="/vendas" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
 function App() {
+  // Removido o <BrowserRouter> para não conflitar com o do main.jsx
   return (
-    <BrowserRouter>
-      <PWAProvider>
-        <AppContent />
-      </PWAProvider>
-    </BrowserRouter>
+    <PWAProvider>
+      <AppContent />
+    </PWAProvider>
   );
 }
 
