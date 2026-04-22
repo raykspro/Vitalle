@@ -5,7 +5,8 @@ import { LayoutContext } from '../components/Layout';
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { parsePriceToCents, formatPriceDisplay } from '../lib/formatters';
 import { usePWA } from '../lib/PWAContext';
 import { 
   ShoppingCart, Plus, Minus, Search, 
@@ -58,20 +59,20 @@ const MobileSales = () => {
     }
   }
 
-  async function fetchTodayStats() {
+async function fetchTodayStats() {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
       const { data, error } = await supabase
         .from('sales')
-        .select('total_amount')
+        .select('total_price_cents')
         .gte('created_at', today.toISOString());
       
       if (error) throw error;
       
-      const total = data?.reduce((acc, curr) => acc + (curr.total_amount || 0), 0) || 0;
-      setStats({ today: total, items: data?.length || 0 });
+      const totalCents = data?.reduce((acc, curr) => acc + Number(curr.total_price_cents || 0), 0) || 0;
+      setStats({ today: totalCents / 100, items: data?.length || 0 });
     } catch (err) {
       console.error("Erro ao carregar estatísticas:", err);
     }

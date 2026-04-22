@@ -42,8 +42,8 @@ const FinanceReceivables = () => {
     );
   }
 
-  const pendingTotal = addCents(...records.filter(r => r.status === 'Pendente').map(r => parsePriceToCents(r.amount)));
-  const paidTotal = addCents(...records.filter(r => r.status === 'Pago').map(r => parsePriceToCents(r.amount)));
+  const pendingTotal = records.filter(r => r.status === 'Pendente').reduce((acc, r) => acc + Number(r.value_cents || 0), 0n);
+  const paidTotal = records.filter(r => r.status === 'Pago').reduce((acc, r) => acc + Number(r.value_cents || 0), 0n);
 
   return (
     <div className="space-y-8">
@@ -91,7 +91,7 @@ const FinanceReceivables = () => {
               records.map((record) => (
                 <TableRow key={record.id} className="hover:bg-slate-50/70 border-b border-slate-100">
                   <TableCell className="font-bold text-slate-800 py-5">{record.customer_name || record.description}</TableCell>
-                  <TableCell className="font-black text-2xl text-magenta py-5">{formatPriceDisplay(parsePriceToCents(record.amount))}</TableCell>
+                  <TableCell className="font-black text-2xl text-magenta py-5">{formatPriceDisplay(record.value_cents)}</TableCell>
                   <TableCell className="font-medium text-slate-600 py-5">{new Date(record.due_date).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell className="py-5">
                     <Badge variant={record.status === 'Pago' ? "default" : "secondary"} className={cn(

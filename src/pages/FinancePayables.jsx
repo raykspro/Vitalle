@@ -6,7 +6,7 @@ import { useUser } from '@clerk/clerk-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '../lib/supabaseClient';
@@ -31,8 +31,9 @@ export default function FinancePayables() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('expenses')
+        .from('financial_records')
         .select('*, suppliers(name)')
+        .eq('type', 'pagar')
         .order('created_at', { ascending: false });
       if (error) {
         console.error('Erro ao carregar despesas:', error);
@@ -236,6 +237,7 @@ export default function FinancePayables() {
             <DialogTitle className="text-2xl font-black uppercase tracking-wider">
               {editId ? 'Editar Despesa' : 'Nova Conta a Pagar'}
             </DialogTitle>
+            <DialogDescription className="text-white/80 mt-2">Gerencie contas a pagar da Vitalle Boutique com precisão centavo a centavo.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
             <div className="space-y-4">

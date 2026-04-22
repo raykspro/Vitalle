@@ -14,7 +14,7 @@ export default function Products() {
   const [editingId, setEditingId] = useState(null);
   
   const initialForm = {
-    name: "", category: "", cost_price: "", sell_price: "",
+    model: "",
     commission_percent: "5", brand: "Vitalle Exclusive",
     image_url: "", color: "", sku: "", status: "Ativo"
   };
@@ -123,7 +123,7 @@ export default function Products() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">Identidade</Label>
-              <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="input-vitalle w-full h-11" placeholder="Nome da Peça" />
+              <input required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="input-vitalle w-full h-11" placeholder="Modelo da Peça" />
               <div className="grid grid-cols-2 gap-2">
                 <Select value={formData.sku} onValueChange={v => setFormData({...formData, sku: v})}>
                   <SelectTrigger className="rounded-xl border-none bg-slate-50 h-11"><SelectValue placeholder="Tam" /></SelectTrigger>
@@ -176,7 +176,7 @@ export default function Products() {
             </div>
             <div className="p-4">
               <p className="text-[9px] font-black text-magenta uppercase tracking-tighter mb-1">{item.category || 'VITALLE'}</p>
-              <h4 className="font-bold text-slate-800 text-xs truncate uppercase">{item.name}</h4>
+              <h4 className="font-bold text-slate-800 text-xs truncate uppercase">{item.model}</h4>
               <p className="font-black text-slate-900 mt-2 italic">{formatPriceDisplay(item.sell_price_cents)}</p>
             </div>
           </div>
