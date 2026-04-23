@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Camera, Edit3, Save } from "lucide-react";
+import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Camera, Edit3, Package } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// --- IMPORTS ADICIONADOS PARA CORRIGIR O ERRO ---
+import { Label } from "@/components/ui/label"; 
+import { Button } from "@/components/ui/button";
+// -----------------------------------------------
 import { cn } from "@/lib/utils";
 import { parsePriceToCents, formatPriceDisplay, percentOfCents, subtractCents } from "@/lib/formatters";
 import { supabase } from "../lib/supabaseClient";
@@ -15,34 +19,43 @@ export default function Products() {
   
   const initialForm = {
     model: "",
-    commission_percent: "5", brand: "Vitalle Exclusive",
-    image_url: "", color: "", sku: "", status: "Ativo"
+    cost_price: "",
+    sell_price: "",
+    commission_percent: "5", 
+    brand: "Vitalle Exclusive",
+    image_url: "", 
+    color: "", 
+    sku: "", 
+    status: "Ativo"
   };
+
   const [formData, setFormData] = useState(initialForm);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [metrics, setMetrics] = useState({ profit_cents: 0n, margin: 0, net_profit_cents: 0n });
+  const [metrics, setMetrics] = useState({ margin: 0, net_profit_cents: 0 });
 
   useEffect(() => { fetchProducts(); }, []);
 
+  // Cálculo de métricas corrigido para não usar BigInt se o banco for bigint simples
   useEffect(() => {
-    const costCents = parsePriceToCents(formData.cost_price);
-    const sellCents = parsePriceToCents(formData.sell_price);
-    if (Number(sellCents) > 0) {
-      const commValueCents = percentOfCents(sellCents, formData.commission_percent);
-      const bruteProfitCents = subtractCents(sellCents, costCents);
-      const netProfitCents = subtractCents(bruteProfitCents, commValueCents);
+    const costCents = Number(parsePriceToCents(formData.cost_price || "0"));
+    const sellCents = Number(parsePriceToCents(formData.sell_price || "0"));
+    
+    if (sellCents > 0) {
+      const commValueCents = (sellCents * Number(formData.commission_percent)) / 100;
+      const netProfitCents = sellCents - costCents - commValueCents;
+      
       setMetrics({ 
-        margin: (Number(netProfitCents) / Number(sellCents)) * 100,
-        net_profit_cents: netProfitCents
+        margin: (netProfitCents / sellCents) * 100,
+        net_profit_cents: Math.round(netProfitCents)
       });
     }
-  }, [formData.cost_price, formData.sell_price]);
+  }, [formData.cost_price, formData.sell_price, formData.commission_percent]);
 
   async function fetchProducts() {
     setLoadingProducts(true);
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    if (error) toast.error("Erro ao carregar banco");
     setProducts(data || []);
     setLoadingProducts(false);
   }
@@ -51,22 +64,19 @@ export default function Products() {
     setEditingId(item.id);
     setFormData({
       ...item,
-      cost_price: item.cost_price?.toString() || "",
-      sell_price: item.sell_price?.toString() || ""
+      cost_price: (item.cost_price_cents / 100).toString(),
+      sell_price: (item.sell_price_cents / 100).toString()
     });
     setPreviewUrl(item.image_url || "");
     setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const uploadImage = async (file) => {
     if (!file) return null;
-    setUploading(true);
-    const fileName = `products/${Date.now()}.${file.name.split('.').pop()}`;
+    const fileName = `products/${Date.now()}_${file.name}`;
     const { data, error } = await supabase.storage.from('products').upload(fileName, file);
     if (error) return null;
     const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(fileName);
-    setUploading(false);
     return publicUrl;
   };
 
@@ -75,16 +85,21 @@ export default function Products() {
     setLoading(true);
     try {
       let finalImageUrl = formData.image_url;
-      if (selectedFile) finalImageUrl = await uploadImage(selectedFile);
+      if (selectedFile) {
+        const uploadedUrl = await uploadImage(selectedFile);
+        if (uploadedUrl) finalImageUrl = uploadedUrl;
+      }
 
       const payload = {
-        ...formData,
+        model: formData.model,
+        brand: formData.brand,
+        color: formData.color,
+        sku: formData.sku,
+        status: formData.status,
         image_url: finalImageUrl,
-        price: parseFloat(formData.sell_price) || 0,
-        cost_price: parseFloat(formData.cost_price) || 0,
+        // Alinhado com o SQL que rodamos:
         sell_price_cents: Number(parsePriceToCents(formData.sell_price)),
         cost_price_cents: Number(parsePriceToCents(formData.cost_price)),
-        net_profit_cents: Number(metrics.net_profit_cents)
       };
 
       const { error } = editingId 
@@ -92,18 +107,22 @@ export default function Products() {
         : await supabase.from('products').insert([payload]);
 
       if (error) throw error;
+
       toast.success(editingId ? "PEÇA ATUALIZADA!" : "PEÇA CADASTRADA!");
       setShowForm(false);
       setEditingId(null);
       setFormData(initialForm);
       setPreviewUrl("");
+      setSelectedFile(null);
       fetchProducts();
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { 
+      toast.error("Erro no Supabase: " + err.message); 
+    }
     setLoading(false);
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
+    <div className="w-full px-4 py-8 space-y-10">
       <header className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black text-slate-900 italic uppercase">Vitalle Vitrine</h1>
@@ -123,13 +142,19 @@ export default function Products() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="space-y-4">
               <Label className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">Identidade</Label>
-              <input required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="input-vitalle w-full h-11" placeholder="Modelo da Peça" />
+              <input required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 ring-magenta/20" placeholder="Modelo da Peça" />
               <div className="grid grid-cols-2 gap-2">
                 <Select value={formData.sku} onValueChange={v => setFormData({...formData, sku: v})}>
                   <SelectTrigger className="rounded-xl border-none bg-slate-50 h-11"><SelectValue placeholder="Tam" /></SelectTrigger>
-                  <SelectContent><SelectItem value="P">P</SelectItem><SelectItem value="M">M</SelectItem><SelectItem value="G">G</SelectItem><SelectItem value="GG">GG</SelectItem><SelectItem value="Único">Único</SelectItem></SelectContent>
+                  <SelectContent>
+                    <SelectItem value="P">P</SelectItem>
+                    <SelectItem value="M">M</SelectItem>
+                    <SelectItem value="G">G</SelectItem>
+                    <SelectItem value="GG">GG</SelectItem>
+                    <SelectItem value="Único">Único</SelectItem>
+                  </SelectContent>
                 </Select>
-                <input value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="input-vitalle w-full h-11" placeholder="Cor" />
+                <input value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} className="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 ring-magenta/20" placeholder="Cor" />
               </div>
             </div>
 
@@ -152,10 +177,10 @@ export default function Products() {
                 <input type="number" step="0.01" value={formData.sell_price} onChange={e => setFormData({...formData, sell_price: e.target.value})} className="bg-white/10 w-full h-10 rounded-lg px-3 font-bold text-magenta outline-none focus:ring-1 ring-magenta" />
               </div>
               <div className="pt-2 border-t border-white/5">
-                <p className="text-[9px] text-slate-500 uppercase">Lucro Líquido</p>
+                <p className="text-[9px] text-slate-500 uppercase">Lucro Líquido Est.</p>
                 <p className="text-xl font-black text-green-400">{formatPriceDisplay(metrics.net_profit_cents)}</p>
               </div>
-              <Button type="submit" disabled={loading} className="w-full bg-magenta hover:bg-magenta/90 text-white font-black uppercase italic text-[10px] h-11 rounded-xl">
+              <Button type="submit" disabled={loading} className="w-full bg-magenta hover:bg-magenta/90 text-white font-black uppercase italic text-[10px] h-11 rounded-xl transition-all">
                 {loading ? <Loader2 className="animate-spin" /> : editingId ? "ATUALIZAR PEÇA" : "CONFIRMAR CADASTRO"}
               </Button>
             </div>
@@ -165,17 +190,19 @@ export default function Products() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {loadingProducts ? (
-          <div className="col-span-full text-center py-20 animate-pulse text-slate-300 font-black italic">SINCRONIZANDO ESTOQUE...</div>
+          <div className="col-span-full text-center py-20 animate-pulse text-slate-300 font-black italic uppercase tracking-widest">Sincronizando Vitrine...</div>
+        ) : products.length === 0 ? (
+          <div className="col-span-full text-center py-20 text-slate-300 font-bold uppercase">Nenhuma peça cadastrada.</div>
         ) : products.map((item) => (
           <div key={item.id} className="group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all relative">
             <button onClick={() => handleEdit(item)} className="absolute top-3 right-3 z-20 bg-white/90 backdrop-blur p-2 rounded-full shadow-md text-slate-400 hover:text-magenta transition-all opacity-0 group-hover:opacity-100">
               <Edit3 size={14} />
             </button>
             <div className="aspect-[3/4] bg-slate-50 overflow-hidden">
-              {item.image_url ? <img src={item.image_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-200"><ImageIcon /></div>}
+              {item.image_url ? <img src={item.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-200"><Package size={40} /></div>}
             </div>
             <div className="p-4">
-              <p className="text-[9px] font-black text-magenta uppercase tracking-tighter mb-1">{item.category || 'VITALLE'}</p>
+              <p className="text-[9px] font-black text-magenta uppercase tracking-tighter mb-1">{item.brand || 'VITALLE'}</p>
               <h4 className="font-bold text-slate-800 text-xs truncate uppercase">{item.model}</h4>
               <p className="font-black text-slate-900 mt-2 italic">{formatPriceDisplay(item.sell_price_cents)}</p>
             </div>
