@@ -40,10 +40,10 @@ const Suppliers = () => {
     if (!user) return toast.error("Você precisa estar logado.");
 
     try {
-      // Incluímos o created_by apenas na inserção ou se necessário no update
+      // Mestre, garantimos que o payload leve o ID do Clerk para a coluna que alteramos para TEXT no SQL
       const payload = { 
         ...formData, 
-        created_by: user.id // O ID do Clerk precisa estar mapeado como UUID no Supabase
+        created_by: user.id 
       };
 
       const { error } = editingId 
@@ -167,29 +167,39 @@ const Suppliers = () => {
       </div>
 
       <Card className="border-0 shadow-xl rounded-[2rem] overflow-hidden bg-white">
-        <Table>
-          <TableHeader className="bg-slate-50">
-            <TableRow>
-              <TableHead className="font-black uppercase text-[9px] italic">Nome</TableHead>
-              <TableHead className="font-black uppercase text-[9px] italic">CNPJ</TableHead>
-              <TableHead className="font-black uppercase text-[9px] italic text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredSuppliers.map((s) => (
-              <TableRow key={s.id} className="hover:bg-slate-50">
-                <TableCell className="font-bold text-slate-700">{s.name}</TableCell>
-                <TableCell className="text-slate-500 text-xs">{s.cnpj || '---'}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(s)} className="text-blue-500"><Edit size={16}/></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} className="text-red-500"><Trash2 size={16}/></Button>
-                  </div>
-                </TableCell>
+        {loading ? (
+          <div className="p-10 text-center font-black italic text-slate-300 animate-pulse">CARREGANDO PARCEIROS...</div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow>
+                <TableHead className="font-black uppercase text-[9px] italic">Nome</TableHead>
+                <TableHead className="font-black uppercase text-[9px] italic">CNPJ</TableHead>
+                <TableHead className="font-black uppercase text-[9px] italic text-right">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredSuppliers.length > 0 ? (
+                filteredSuppliers.map((s) => (
+                  <TableRow key={s.id} className="hover:bg-slate-50">
+                    <TableCell className="font-bold text-slate-700">{s.name}</TableCell>
+                    <TableCell className="text-slate-500 text-xs">{s.cnpj || '---'}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(s)} className="text-blue-500"><Edit size={16}/></Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)} className="text-red-500"><Trash2 size={16}/></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-10 text-slate-400 italic">Nenhum fornecedor encontrado.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </Card>
     </div>
   );

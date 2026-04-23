@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, Save, X } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Search, Trash2, Edit, Save, UserPlus, X } from 'lucide-react';
 import InputMask from 'react-input-mask';
 import { toast } from "sonner";
 
@@ -12,6 +13,7 @@ const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const initialForm = { 
     name: '', cpf: '', whatsapp: '', 
@@ -23,57 +25,48 @@ const Customers = () => {
 
   async function loadCustomers() {
     setLoading(true);
-    const { data } = await supabase.from('customers').select('*').order('name');
-    setCustomers(data || []);
+    const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+    if (!error) setCustomers(data || []);
     setLoading(false);
   }
 
-  // --- FUNÇÃO PARA PUXAR A RUA PELO CEP ---
   const handleCepBlur = async (e) => {
     const cep = e.target.value.replace(/\D/g, '');
     if (cep.length === 8) {
       try {
         const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
         const data = await response.json();
-        
-        if (data.erro) {
-          toast.error("CEP não encontrado.");
-          return;
+        if (!data.erro) {
+          setFormData(prev => ({ ...prev, street: data.logradouro }));
+          toast.info("Endereço localizado!");
         }
-
-        setFormData(prev => ({
-          ...prev,
-          street: data.logradouro,
-          address_complement: data.complemento || prev.address_complement
-        }));
-        toast.info("Endereço preenchido automaticamente.");
-      } catch (error) {
-        toast.error("Erro ao buscar CEP.");
-      }
+      } catch (err) { console.error("Erro CEP"); }
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // O erro de "coluna não encontrada" acontece aqui se o SQL não tiver sido rodado
       const { error } = editingId 
         ? await supabase.from('customers').update(formData).eq('id', editingId)
         : await supabase.from('customers').insert([formData]);
       
       if (error) throw error;
       
-      toast.success("Cliente salvo com sucesso!");
+      toast.success("Cliente salvo!");
       setFormData(initialForm);
       setEditingId(null);
-      loadCustomers();
+      setSearchTerm(''); // Limpa busca para mostrar o novo item
+      loadCustomers(); // Força recarregamento da lista
     } catch (error) { 
-      console.error(error);
-      toast.error("Erro ao salvar: Verifique se as colunas existem no Supabase.");
+      toast.error("Erro ao salvar no banco.");
     }
   };
 
-  if (loading) return <div className="p-12 font-black italic animate-pulse text-[#D946EF] text-center">CARREGANDO CLIENTES...</div>;
+  const filteredCustomers = customers.filter(c => 
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.cpf?.includes(searchTerm)
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -84,7 +77,6 @@ const Customers = () => {
           <span className="text-white text-[10px] font-bold uppercase tracking-widest italic flex items-center gap-2">
             <UserPlus size={12} /> {editingId ? 'Editar Cadastro' : 'Novo Cadastro Vitalle'}
           </span>
-          {editingId && <X className="text-white size-4 cursor-pointer" onClick={() => {setEditingId(null); setFormData(initialForm);}} />}
         </div>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -110,12 +102,7 @@ const Customers = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-50">
               <div>
                 <Label className="text-[10px] font-black uppercase text-slate-400">CEP</Label>
-                <InputMask 
-                  mask="99999-000" 
-                  value={formData.cep} 
-                  onChange={e => setFormData({...formData, cep: e.target.value})}
-                  onBlur={handleCepBlur} // Aciona a busca ao sair do campo
-                >
+                <InputMask mask="99999-000" value={formData.cep} onChange={e => setFormData({...formData, cep: e.target.value})} onBlur={handleCepBlur}>
                   {(inputProps) => <Input {...inputProps} className="rounded-xl border-none bg-slate-50 h-10" />}
                 </InputMask>
               </div>
@@ -137,6 +124,37 @@ const Customers = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* BARRA DE BUSCA E TABELA */}
+      <div className="px-2">
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input placeholder="Buscar por nome ou CPF..." className="pl-10 rounded-2xl border-none bg-white shadow-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+        </div>
+
+        <Card className="border-0 shadow-sm rounded-3xl overflow-hidden bg-white">
+          <Table>
+            <TableHeader className="bg-slate-50">
+              <TableRow>
+                <TableHead className="font-black uppercase text-[9px] italic">Cliente</TableHead>
+                <TableHead className="font-black uppercase text-[9px] italic">WhatsApp</TableHead>
+                <TableHead className="font-black uppercase text-[9px] italic text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-bold">{c.name}</TableCell>
+                  <TableCell className="text-slate-500 text-xs">{c.whatsapp}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => {setEditingId(c.id); setFormData(c);}} className="text-blue-500"><Edit size={16}/></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
     </div>
   );
 };
