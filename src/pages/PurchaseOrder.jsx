@@ -36,27 +36,36 @@ const PurchaseOrder = () => {
       const [, qtyStr, fullDesc] = match;
       const descLower = fullDesc.toLowerCase();
 
+      // Identificar Tamanho
       const sizeRegex = /\b(P|M|G|GG|Único)\b/i;
       const sizeMatch = fullDesc.match(sizeRegex);
       const size = sizeMatch ? sizeMatch[0].toUpperCase() : 'ÚNICO';
 
+      // Identificar Categoria e Cor
       const category = CATEGORIES.find(c => descLower.includes(c.toLowerCase())) || 'Baby Doll';
       const color = COLORS.find(c => descLower.includes(c.toLowerCase())) || 'Padrão';
       
-      const model = fullDesc
+      // Limpar o Modelo (remove categoria, cor e tamanho da string original)
+      let model = fullDesc
         .replace(new RegExp(category, 'gi'), '')
         .replace(new RegExp(color, 'gi'), '')
         .replace(new RegExp(`\\b${size}\\b`, 'gi'), '')
         .replace(/[\d,.]+$/, '') 
-        .trim() || 'Básico';
+        .trim();
+
+      if (!model) model = "Básico";
+
+      // MONTAGEM DO NOME COMPLETO (O que o senhor sentiu falta)
+      const fullName = `${category} ${model} - ${color}`.toUpperCase();
 
       return {
         qty: Number(qtyStr),
         category,
-        model,
-        color,
+        model: model.toUpperCase(),
+        color: color.toUpperCase(),
         size,
-        unitCost: '15.00', // Valor padrão de exemplo
+        productName: fullName, // Nome formatado para a tabela
+        unitCost: '15.00',
         sellPrice: '79.90'
       };
     }).filter(Boolean);
@@ -73,7 +82,6 @@ const PurchaseOrder = () => {
     const totalCostCents = unitCostCents + rateioFrete;
     
     const sellCents = Number(parsePriceToCents(item.sellPrice.replace(',', '.')));
-    // Comissão de 5% (ajustado para o padrão Vitalle)
     const comissao = (sellCents * 5) / 100; 
     const profit = sellCents - totalCostCents - comissao;
     const margin = sellCents > 0 ? (profit / sellCents) * 100 : 0;
@@ -98,22 +106,24 @@ const PurchaseOrder = () => {
       for (const item of items) {
         const { totalCostCents, sellCents } = calculateFinancials(item);
         
-        // 1. Verificar/Criar Produto (Busca por MODELO agora)
+        // 1. Verificar/Criar Produto (Busca por NOME COMPLETO ou MODELO)
         const { data: prod } = await supabase
           .from('products')
           .select('id')
           .eq('model', item.model)
+          .eq('color', item.color)
           .maybeSingle();
 
         let pId;
         if (!prod) {
           const { data: newP, error: insErr } = await supabase.from('products').insert([{
+            name: item.productName,
             model: item.model, 
-            brand: 'Vitalle Exclusive',
             category: item.category, 
             color: item.color,
             cost_price_cents: totalCostCents, 
-            sell_price_cents: sellCents, 
+            sell_price_cents: sellCents,
+            sku: `${item.model.substring(0,3)}-${item.color.substring(0,3)}`.toUpperCase(),
             status: 'Ativo'
           }]).select().single();
           
@@ -123,7 +133,8 @@ const PurchaseOrder = () => {
           pId = prod.id;
           await supabase.from('products').update({
             cost_price_cents: totalCostCents, 
-            sell_price_cents: sellCents
+            sell_price_cents: sellCents,
+            name: item.productName // Atualiza o nome caso tenha mudado
           }).eq('id', pId);
         }
 
@@ -165,7 +176,7 @@ const PurchaseOrder = () => {
           <h1 className="text-4xl font-black text-slate-800 uppercase italic tracking-tighter">Entrada de Material</h1>
           <p className="text-slate-400 font-bold text-sm uppercase">Vitalle Stock Intelligence</p>
         </div>
-        <Badge className="bg-magenta px-6 py-2 text-sm rounded-full shadow-xl">MODO INTELIGENTE</Badge>
+        <Badge className="bg-magenta px-6 py-2 text-sm rounded-full shadow-xl">MODO INTELIGENTE ATIVO</Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -177,7 +188,7 @@ const PurchaseOrder = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea 
-              placeholder="Ex: 10x Baby Doll Renda Preto M" 
+              placeholder="Ex: 3x Baby Doll Love Rosa M" 
               className="min-h-[300px] rounded-[1.5rem] border-slate-100 bg-slate-50/50 p-6 focus:ring-2 ring-magenta text-sm font-medium" 
               value={orderText} 
               onChange={e => setOrderText(e.target.value)} 
@@ -200,7 +211,7 @@ const PurchaseOrder = () => {
           <CardHeader className="bg-slate-50/50 p-6 border-b border-slate-100">
             <CardTitle className="flex justify-between items-center text-slate-700 uppercase italic font-black text-base">
               <span className="flex items-center gap-3"><TrendingUp className="w-5 h-5 text-green-500"/> Conferência de Entrada</span>
-              <Badge variant="outline" className="rounded-full px-3">{items.length} Peças Diferentes</Badge>
+              <Badge variant="outline" className="rounded-full px-3">{items.length} Peças Detectadas</Badge>
             </CardTitle>
           </CardHeader>
           
@@ -208,29 +219,33 @@ const PurchaseOrder = () => {
             <Table>
               <TableHeader>
                 <TableRow className="border-none">
-                  <TableHead className="uppercase font-black text-slate-400 text-[10px]">Modelo</TableHead>
-                  <TableHead className="uppercase font-black text-slate-400 text-[10px] text-center">Tam</TableHead>
+                  <TableHead className="uppercase font-black text-slate-400 text-[10px]">Identificação do Produto</TableHead>
+                  <TableHead className="uppercase font-black text-slate-400 text-[10px] text-center">Tamanho</TableHead>
                   <TableHead className="uppercase font-black text-slate-400 text-[10px] text-center">Qtd</TableHead>
-                  <TableHead className="uppercase font-black text-slate-400 text-[10px]">Custo (S/ Frete)</TableHead>
+                  <TableHead className="uppercase font-black text-slate-400 text-[10px]">Custo Un.</TableHead>
                   <TableHead className="uppercase font-black text-slate-400 text-[10px]">Venda</TableHead>
                   <TableHead className="uppercase font-black text-slate-400 text-[10px]">Lucro Est.</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="h-64 text-center italic text-slate-300 uppercase text-xs">Aguardando texto da ordem...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="h-64 text-center italic text-slate-300 uppercase text-xs">Aguardando padrão: QTDx CATEGORIA MODELO COR TAM</TableCell></TableRow>
                 ) : items.map((item, idx) => {
                   const { profit, margin } = calculateFinancials(item);
                   return (
                     <TableRow key={idx} className="border-b border-slate-50">
-                      <TableCell className="font-bold text-slate-700 uppercase text-[10px]">{item.model}</TableCell>
-                      <TableCell className="text-center"><Badge variant="secondary">{item.size}</Badge></TableCell>
-                      <TableCell className="text-center font-black">{item.qty}</TableCell>
+                      <TableCell className="font-bold text-slate-700 uppercase text-[11px]">
+                        {item.productName}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge className="bg-slate-100 text-slate-800 border-none">{item.size}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center font-black text-slate-900">{item.qty}</TableCell>
                       <TableCell>
-                        <Input className="w-20 h-8 text-[11px]" value={item.unitCost} onChange={e => updateItemField(idx, 'unitCost', e.target.value)}/>
+                        <Input className="w-20 h-8 text-[11px] font-bold" value={item.unitCost} onChange={e => updateItemField(idx, 'unitCost', e.target.value)}/>
                       </TableCell>
                       <TableCell>
-                        <Input className="w-20 h-8 text-[11px]" value={item.sellPrice} onChange={e => updateItemField(idx, 'sellPrice', e.target.value)}/>
+                        <Input className="w-20 h-8 text-[11px] font-bold" value={item.sellPrice} onChange={e => updateItemField(idx, 'sellPrice', e.target.value)}/>
                       </TableCell>
                       <TableCell>
                         <Badge className={`rounded-md px-2 py-1 text-[9px] font-black ${margin > 30 ? 'bg-green-500' : 'bg-orange-500'}`}>
@@ -247,7 +262,7 @@ const PurchaseOrder = () => {
           {items.length > 0 && (
             <div className="p-6 bg-slate-50/30 border-t border-slate-100">
               <Button onClick={() => setConfirmOpen(true)} className="w-full h-14 bg-magenta hover:opacity-90 text-white text-lg font-black uppercase italic shadow-xl">
-                LANÇAR NO ESTOQUE ({items.reduce((acc, i) => acc + i.qty, 0)} PEÇAS)
+                CONFIRMAR E LANÇAR ({items.reduce((acc, i) => acc + i.qty, 0)} PEÇAS)
               </Button>
             </div>
           )}
@@ -257,16 +272,18 @@ const PurchaseOrder = () => {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-md bg-white p-8 rounded-[2rem]">
           <div className="flex flex-col items-center text-center space-y-4">
-            <AlertTriangle className="w-12 h-12 text-amber-500" />
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-amber-500" />
+            </div>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-black uppercase italic">Confirmar Entrada?</DialogTitle>
+              <DialogTitle className="text-2xl font-black uppercase italic">Atualizar Inventário?</DialogTitle>
             </DialogHeader>
-            <p className="text-slate-500 text-sm">O estoque e os preços de venda serão atualizados no sistema.</p>
+            <p className="text-slate-500 text-sm italic font-medium">Isso vai criar novos produtos ou atualizar o estoque dos existentes na Vitalle.</p>
             <div className="flex flex-col w-full gap-2 pt-4">
-              <Button onClick={handleConfirm} disabled={loading} className="bg-magenta text-white font-black h-12 rounded-xl">
-                {loading ? <Loader2 className="animate-spin" /> : 'SIM, LANÇAR AGORA'}
+              <Button onClick={handleConfirm} disabled={loading} className="bg-magenta text-white font-black h-12 rounded-xl text-base italic uppercase">
+                {loading ? <Loader2 className="animate-spin" /> : 'SIM, ATUALIZAR AGORA'}
               </Button>
-              <Button variant="ghost" onClick={() => setConfirmOpen(false)}>CANCELAR</Button>
+              <Button variant="ghost" onClick={() => setConfirmOpen(false)} className="font-bold text-slate-400">CANCELAR</Button>
             </div>
           </div>
         </DialogContent>

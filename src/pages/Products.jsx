@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Plus, X, Loader2, DollarSign, Tag, Image as ImageIcon, Camera, Edit3, Package } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// --- IMPORTS ADICIONADOS PARA CORRIGIR O ERRO ---
 import { Label } from "@/components/ui/label"; 
 import { Button } from "@/components/ui/button";
-// -----------------------------------------------
 import { cn } from "@/lib/utils";
-import { parsePriceToCents, formatPriceDisplay, percentOfCents, subtractCents } from "@/lib/formatters";
+import { parsePriceToCents, formatPriceDisplay } from "@/lib/formatters";
 import { supabase } from "../lib/supabaseClient";
 import { toast } from "sonner";
 
@@ -36,7 +34,6 @@ export default function Products() {
 
   useEffect(() => { fetchProducts(); }, []);
 
-  // Cálculo de métricas corrigido para não usar BigInt se o banco for bigint simples
   useEffect(() => {
     const costCents = Number(parsePriceToCents(formData.cost_price || "0"));
     const sellCents = Number(parsePriceToCents(formData.sell_price || "0"));
@@ -64,6 +61,7 @@ export default function Products() {
     setEditingId(item.id);
     setFormData({
       ...item,
+      model: item.model || item.name || "", // Fallback para carregar o nome corretamente
       cost_price: (item.cost_price_cents / 100).toString(),
       sell_price: (item.sell_price_cents / 100).toString()
     });
@@ -90,14 +88,15 @@ export default function Products() {
         if (uploadedUrl) finalImageUrl = uploadedUrl;
       }
 
+      // CORREÇÃO CRÍTICA: Mapeando 'model' para 'name' para satisfazer a constraint do banco
       const payload = {
+        name: formData.model, // Campo obrigatório no banco
         model: formData.model,
         brand: formData.brand,
         color: formData.color,
         sku: formData.sku,
         status: formData.status,
         image_url: finalImageUrl,
-        // Alinhado com o SQL que rodamos:
         sell_price_cents: Number(parsePriceToCents(formData.sell_price)),
         cost_price_cents: Number(parsePriceToCents(formData.cost_price)),
       };
@@ -162,7 +161,7 @@ export default function Products() {
               <Label className="text-[10px] font-black uppercase text-slate-400">Visual</Label>
               <label className="aspect-square bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer overflow-hidden group">
                 <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files[0]; if(file){ setSelectedFile(file); setPreviewUrl(URL.createObjectURL(file)); } }} className="hidden" />
-                {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" /> : <Camera className="text-slate-300 group-hover:text-magenta transition-colors" />}
+                {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" /> : <Camera className="text-slate-300 group-hover:text-magenta transition-colors" />}
               </label>
             </div>
 
@@ -199,11 +198,11 @@ export default function Products() {
               <Edit3 size={14} />
             </button>
             <div className="aspect-[3/4] bg-slate-50 overflow-hidden">
-              {item.image_url ? <img src={item.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-slate-200"><Package size={40} /></div>}
+              {item.image_url ? <img src={item.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.model} /> : <div className="w-full h-full flex items-center justify-center text-slate-200"><Package size={40} /></div>}
             </div>
             <div className="p-4">
               <p className="text-[9px] font-black text-magenta uppercase tracking-tighter mb-1">{item.brand || 'VITALLE'}</p>
-              <h4 className="font-bold text-slate-800 text-xs truncate uppercase">{item.model}</h4>
+              <h4 className="font-bold text-slate-800 text-xs truncate uppercase">{item.model || item.name}</h4>
               <p className="font-black text-slate-900 mt-2 italic">{formatPriceDisplay(item.sell_price_cents)}</p>
             </div>
           </div>
