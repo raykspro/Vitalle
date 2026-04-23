@@ -4,35 +4,35 @@
   "properties": {
     "name": {
       "type": "string",
-      "title": "Nome"
+      "title": "Nome Completo"
     },
-    "phone": {
+    "whatsapp": {
       "type": "string",
-      "title": "Telefone"
-    },
-    "email": {
-      "type": "string",
-      "title": "E-mail"
+      "title": "WhatsApp"
     },
     "cpf": {
       "type": "string",
       "title": "CPF"
     },
-    "address": {
+    "cep": {
       "type": "string",
-      "title": "Endere\u00e7o"
+      "title": "CEP"
     },
-    "city": {
+    "street": {
       "type": "string",
-      "title": "Cidade"
+      "title": "Rua / Logradouro"
     },
-    "state": {
+    "address_number": {
       "type": "string",
-      "title": "Estado"
+      "title": "Nº / Complemento"
+    },
+    "address_complement": {
+      "type": "string",
+      "title": "Complemento Extra"
     },
     "notes": {
       "type": "string",
-      "title": "Observa\u00e7\u00f5es"
+      "title": "Observações"
     }
   },
   "required": [

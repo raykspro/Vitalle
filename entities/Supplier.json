@@ -4,7 +4,7 @@
   "properties": {
     "name": {
       "type": "string",
-      "title": "Nome/Raz\u00e3o Social"
+      "title": "Nome/Razão Social"
     },
     "cnpj": {
       "type": "string",
@@ -24,11 +24,15 @@
     },
     "address": {
       "type": "string",
-      "title": "Endere\u00e7o"
+      "title": "Endereço Completo"
+    },
+    "created_by": {
+      "type": "string",
+      "title": "ID do Criador"
     },
     "notes": {
       "type": "string",
-      "title": "Observa\u00e7\u00f5es"
+      "title": "Observações"
     }
   },
   "required": [
