@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import { Search, Trash2, Edit, Save, UserPlus, X } from 'lucide-react';
+import { UserPlus, Save, X } from 'lucide-react';
 import InputMask from 'react-input-mask';
 import { toast } from "sonner";
 
@@ -13,7 +12,6 @@ const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   
   const initialForm = { 
     name: '', cpf: '', whatsapp: '', 
@@ -30,20 +28,48 @@ const Customers = () => {
     setLoading(false);
   }
 
+  // --- FUNÇÃO PARA PUXAR A RUA PELO CEP ---
+  const handleCepBlur = async (e) => {
+    const cep = e.target.value.replace(/\D/g, '');
+    if (cep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        
+        if (data.erro) {
+          toast.error("CEP não encontrado.");
+          return;
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          street: data.logradouro,
+          address_complement: data.complemento || prev.address_complement
+        }));
+        toast.info("Endereço preenchido automaticamente.");
+      } catch (error) {
+        toast.error("Erro ao buscar CEP.");
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // O erro de "coluna não encontrada" acontece aqui se o SQL não tiver sido rodado
       const { error } = editingId 
         ? await supabase.from('customers').update(formData).eq('id', editingId)
         : await supabase.from('customers').insert([formData]);
       
       if (error) throw error;
+      
       toast.success("Cliente salvo com sucesso!");
       setFormData(initialForm);
       setEditingId(null);
       loadCustomers();
     } catch (error) { 
-      toast.error("Erro ao salvar: Verifique as colunas de endereço no Supabase.");
+      console.error(error);
+      toast.error("Erro ao salvar: Verifique se as colunas existem no Supabase.");
     }
   };
 
@@ -84,7 +110,12 @@ const Customers = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-50">
               <div>
                 <Label className="text-[10px] font-black uppercase text-slate-400">CEP</Label>
-                <InputMask mask="99999-000" value={formData.cep} onChange={e => setFormData({...formData, cep: e.target.value})}>
+                <InputMask 
+                  mask="99999-000" 
+                  value={formData.cep} 
+                  onChange={e => setFormData({...formData, cep: e.target.value})}
+                  onBlur={handleCepBlur} // Aciona a busca ao sair do campo
+                >
                   {(inputProps) => <Input {...inputProps} className="rounded-xl border-none bg-slate-50 h-10" />}
                 </InputMask>
               </div>
@@ -106,7 +137,6 @@ const Customers = () => {
           </form>
         </CardContent>
       </Card>
-      {/* Tabela de clientes omitida para brevidade, mas segue o mesmo padrão */}
     </div>
   );
 };
