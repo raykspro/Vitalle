@@ -17,7 +17,7 @@ import Suppliers from './pages/Suppliers';
 import Configuracoes from './pages/Configuracoes';
 import { PWAProvider, usePWA } from './lib/PWAContext';
 // IMPORTANTE: Importar o SidebarProvider
-import { SidebarProvider } from "./components/Sidebar";
+// SidebarProvider removido - Layout gerencia mobile/desktop nativamente
 
 const PageLoader = () => (
   <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white">
