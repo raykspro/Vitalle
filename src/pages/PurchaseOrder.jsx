@@ -12,7 +12,16 @@ import { Badge } from '../components/ui/badge';
 import { Package, Truck, TrendingUp, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from "sonner";
 
-const CATEGORIES = ['Baby Doll', 'Baby Doll Infantil', 'Camisola', 'Lingerie', 'Pijama', 'Calcinha', 'Sutiã'];
+// Categorias sincronizadas com o componente Products e o Banco
+const CATEGORIES_MAP = [
+  { id: 'baby-doll-infantil', label: 'Baby Doll Infantil' },
+  { id: 'baby-doll', label: 'Baby Doll' },
+  { id: 'camisola', label: 'Camisola' },
+  { id: 'lingerie', label: 'Lingerie' },
+  { id: 'conjuntos', label: 'Conjuntos' },
+  { id: 'acessorios', label: 'Acessórios' }
+];
+
 const COLORS = [
   'Laranja', 'Preto', 'Branco', 'Satin', 'Vinho', 'Azul Marinho', 'Romance', 'Oncinha', 
   'Rosa', 'Vermelho', 'Verde', 'Pink', 'Azul', 'Amarelo', 'Bege', 'Chocolate', 'Cinza', 
@@ -41,13 +50,15 @@ const PurchaseOrder = () => {
       const sizeMatch = fullDesc.match(sizeRegex);
       const size = sizeMatch ? sizeMatch[0].toUpperCase() : 'ÚNICO';
 
-      // Identificar Categoria e Cor
-      const category = CATEGORIES.find(c => descLower.includes(c.toLowerCase())) || 'Baby Doll';
+      // Identificar Categoria (Ordem importa: Infantil antes de Adulto)
+      const categoryObj = CATEGORIES_MAP.find(c => descLower.includes(c.label.toLowerCase())) || { id: 'baby-doll', label: 'Baby Doll' };
+      
+      // Identificar Cor
       const color = COLORS.find(c => descLower.includes(c.toLowerCase())) || 'Padrão';
       
-      // Limpar o Modelo (remove categoria, cor e tamanho da string original)
+      // Limpar o Modelo
       let model = fullDesc
-        .replace(new RegExp(category, 'gi'), '')
+        .replace(new RegExp(categoryObj.label, 'gi'), '')
         .replace(new RegExp(color, 'gi'), '')
         .replace(new RegExp(`\\b${size}\\b`, 'gi'), '')
         .replace(/[\d,.]+$/, '') 
@@ -55,16 +66,16 @@ const PurchaseOrder = () => {
 
       if (!model) model = "Básico";
 
-      // MONTAGEM DO NOME COMPLETO (O que o senhor sentiu falta)
-      const fullName = `${category} ${model} - ${color}`.toUpperCase();
+      const fullName = `${categoryObj.label} ${model} - ${color}`.toUpperCase();
 
       return {
         qty: Number(qtyStr),
-        category,
+        category_id: categoryObj.id,
+        category_label: categoryObj.label,
         model: model.toUpperCase(),
         color: color.toUpperCase(),
         size,
-        productName: fullName, // Nome formatado para a tabela
+        productName: fullName,
         unitCost: '15.00',
         sellPrice: '79.90'
       };
@@ -106,7 +117,7 @@ const PurchaseOrder = () => {
       for (const item of items) {
         const { totalCostCents, sellCents } = calculateFinancials(item);
         
-        // 1. Verificar/Criar Produto (Busca por NOME COMPLETO ou MODELO)
+        // 1. Verificar/Criar Produto
         const { data: prod } = await supabase
           .from('products')
           .select('id')
@@ -119,7 +130,7 @@ const PurchaseOrder = () => {
           const { data: newP, error: insErr } = await supabase.from('products').insert([{
             name: item.productName,
             model: item.model, 
-            category: item.category, 
+            category: item.category_id, // Usando o ID técnico
             color: item.color,
             cost_price_cents: totalCostCents, 
             sell_price_cents: sellCents,
@@ -134,7 +145,7 @@ const PurchaseOrder = () => {
           await supabase.from('products').update({
             cost_price_cents: totalCostCents, 
             sell_price_cents: sellCents,
-            name: item.productName // Atualiza o nome caso tenha mudado
+            name: item.productName
           }).eq('id', pId);
         }
 
@@ -146,25 +157,27 @@ const PurchaseOrder = () => {
           .maybeSingle();
 
         if (st) {
-          await supabase.from('stock_items')
+          const { error: upErr } = await supabase.from('stock_items')
             .update({ quantity: st.quantity + item.qty })
             .eq('id', st.id);
+          if (upErr) throw upErr;
         } else {
-          await supabase.from('stock_items').insert([{
+          const { error: inStErr } = await supabase.from('stock_items').insert([{
             product_id: pId, 
             size: item.size, 
             color: item.color, 
             quantity: item.qty
           }]);
+          if (inStErr) throw inStErr;
         }
       }
       
-      toast.success("Estoque e preços Vitalle atualizados!");
+      toast.success("Estoque Vitalle atualizado mestre!");
       setOrderText('');
       setConfirmOpen(false);
     } catch (e) { 
       console.error(e);
-      toast.error("Erro na carga: " + e.message); 
+      toast.error("Falha no lançamento: " + e.message); 
     }
     setLoading(false);
   };
