@@ -50,17 +50,17 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-50 rounded-lg shadow-xl border border-gray-100">
-        <h1 className="text-5xl font-extrabold text-center text-black">Vitalle</h1>
-        <h2 className="text-2xl font-bold text-center text-[#d946ef]">Login</h2>
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md p-8 bg-white shadow-xl rounded-2xl">
+        <h1 className="text-5xl font-extrabold text-center text-black mb-4">Vitalle</h1>
+        <h2 className="text-2xl font-bold text-center text-[#d946ef] mb-8">Login</h2>
         
         <input
           type="text"
           placeholder="Usuário"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full px-4 py-3 border rounded focus:ring-2 focus:ring-[#d946ef] outline-none"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d946ef] focus:border-transparent outline-none mb-4"
         />
         
         <input
@@ -68,18 +68,18 @@ export default function Login() {
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-3 border rounded focus:ring-2 focus:ring-[#d946ef] outline-none"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#d946ef] focus:border-transparent outline-none mb-6"
         />
         
         <button
           onClick={handleSignIn}
           disabled={loading}
-          className="w-full py-3 font-bold text-white bg-[#d946ef] rounded hover:opacity-90 disabled:opacity-50 transition-all"
+          className="w-full py-4 font-bold text-white bg-[#d946ef] rounded-xl hover:bg-[#c026d3] hover:shadow-lg transition-all duration-300 disabled:opacity-50 text-lg"
         >
           {loading ? "Abrindo as portas..." : "ENTRAR"}
         </button>
         
-        {error && <p className="text-red-500 text-center font-medium">{error}</p>}
+        {error && <p className="text-red-500 text-center font-medium mt-4">{error}</p>}
       </div>
     </div>
   );

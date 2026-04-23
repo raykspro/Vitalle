@@ -28,14 +28,15 @@ export default function Dashboard() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       
       // 1. Vendas do Mês (Ajustado para centavos)
-      const { data: salesData, error: salesErr } = await supabase
+const { data: salesData, error: salesErr } = await supabase
         .from('sales')
-        .select('total_price_cents')
-        .gte('created_at', monthStart);
+        .select('final_amount')
+        .gte('sale_date', monthStart)
+        .or('status.eq.Concluída,status.eq.Pendente');
 
       if (salesErr) throw salesErr;
       
-      const salesTotalCents = salesData?.reduce((sum, s) => sum + (Number(s.total_price_cents) || 0), 0) || 0;
+const salesTotalCents = salesData?.reduce((sum, s) => sum + (Number(s.final_amount) || 0), 0) || 0;
       const salesTotalReal = salesTotalCents / 100;
 
       // 2. Novos Clientes

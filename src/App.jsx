@@ -41,15 +41,14 @@ function AppContent() {
   }, [setInstallPrompt]);
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      {/* O SidebarProvider deve abraçar as rotas para o menu funcionar */}
-      <SidebarProvider>
+    <div className="w-full h-screen">
+      <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Navigate to="/vendas" replace />} />
 
           <Route element={<AuthGuard />}>
-            <Route element={<Layout />}>
+            <Route element={<Layout />} >
               <Route path="/vendas" element={<MobileSales />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
@@ -70,8 +69,8 @@ function AppContent() {
 
           <Route path="*" element={<Navigate to="/vendas" replace />} />
         </Routes>
-      </SidebarProvider>
-    </Suspense>
+      </Suspense>
+    </div>
   );
 }
 

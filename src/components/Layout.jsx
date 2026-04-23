@@ -102,30 +102,30 @@ export default function Layout() {
 
   return (
     <LayoutContext.Provider value={{ mobileOpen, setMobileOpen }}>
-      <div className="flex min-h-screen flex-col lg:flex-row bg-[#FDFBF7]">
-        {/* MOBILE OVERLAY MENU */}
+      <div className="flex h-screen w-full bg-[#FDFBF7]">
+        {/* MOBILE SHEET */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="p-0 w-80 bg-white border-r-0">
-            <div className="p-8 border-b border-slate-50 bg-[#D946EF]/5">
+          <SheetContent side="left" className="p-0 w-80 bg-white border-r-0 h-full">
+            <div className="p-8 border-b border-slate-50 bg-gradient-to-b from-[#D946EF]/10 to-transparent">
               <h1 className="text-2xl font-black text-[#D946EF] tracking-tighter italic uppercase">VITALLE</h1>
             </div>
             <NavContent />
           </SheetContent>
         </Sheet>
 
-        {/* SIDEBAR DESKTOP */}
-        <aside className="hidden lg:flex border-r border-slate-100 bg-white min-h-screen w-72 flex-col sticky top-0">
-          <div className="p-10 border-b border-slate-50">
-            <h1 className="text-3xl font-black text-[#D946EF] tracking-tighter italic">VITALLE</h1>
-            <p className="text-[10px] text-slate-400 font-black tracking-[0.4em] uppercase mt-1">Boutique Luxury</p>
+        {/* DESKTOP SIDEBAR FIXED */}
+        <aside className="hidden lg:block fixed left-0 top-0 h-screen w-72 bg-white border-r border-slate-100 z-40 shadow-lg">
+          <div className="p-8 border-b border-slate-100 h-20 flex items-center">
+            <h1 className="text-2xl font-black text-[#D946EF] tracking-tighter italic">VITALLE</h1>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Luxury</p>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="overflow-y-auto h-[calc(100vh-5rem)] pt-4">
             <NavContent />
           </div>
         </aside>
 
-        {/* CONTEÚDO PRINCIPAL */}
-        <main className="flex-1 relative">
+        {/* MAIN CONTENT */}
+        <main className="lg:ml-72 w-full h-screen overflow-y-auto">
           <Outlet />
         </main>
       </div>
