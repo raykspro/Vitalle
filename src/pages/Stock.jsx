@@ -30,7 +30,7 @@ export default function Stock() {
           *,
           products ( name, sell_price_cents )
         `)
-        .order('created_at', { ascending: false });
+        .order('id', { ascending: false });
 
       const { data: prodsRes } = await supabase
         .from('products')
