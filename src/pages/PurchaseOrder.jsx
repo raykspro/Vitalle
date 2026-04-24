@@ -12,7 +12,6 @@ import { Badge } from '../components/ui/badge';
 import { Package, Truck, TrendingUp, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from "sonner";
 
-// Categorias sincronizadas com o componente Products e o Banco
 const CATEGORIES_MAP = [
   { id: 'baby-doll-infantil', label: 'Baby Doll Infantil' },
   { id: 'baby-doll', label: 'Baby Doll' },
@@ -27,6 +26,9 @@ const COLORS = [
   'Rosa', 'Vermelho', 'Verde', 'Pink', 'Azul', 'Amarelo', 'Bege', 'Chocolate', 'Cinza', 
   'Lilás', 'Fúcsia', 'Pistache', 'Tifany', 'Royal', 'Coral', 'Marrom'
 ];
+
+// MESTRE: Configuração central de taxa
+const TAXA_COMISSAO = 0.15; // 15%
 
 const PurchaseOrder = () => {
   const [orderText, setOrderText] = useState('');
@@ -45,18 +47,13 @@ const PurchaseOrder = () => {
       const [, qtyStr, fullDesc] = match;
       const descLower = fullDesc.toLowerCase();
 
-      // Identificar Tamanho
       const sizeRegex = /\b(P|M|G|GG|Único)\b/i;
       const sizeMatch = fullDesc.match(sizeRegex);
       const size = sizeMatch ? sizeMatch[0].toUpperCase() : 'ÚNICO';
 
-      // Identificar Categoria (Ordem importa: Infantil antes de Adulto)
       const categoryObj = CATEGORIES_MAP.find(c => descLower.includes(c.label.toLowerCase())) || { id: 'baby-doll', label: 'Baby Doll' };
-      
-      // Identificar Cor
       const color = COLORS.find(c => descLower.includes(c.toLowerCase())) || 'Padrão';
       
-      // Limpar o Modelo
       let model = fullDesc
         .replace(new RegExp(categoryObj.label, 'gi'), '')
         .replace(new RegExp(color, 'gi'), '')
@@ -65,7 +62,6 @@ const PurchaseOrder = () => {
         .trim();
 
       if (!model) model = "Básico";
-
       const fullName = `${categoryObj.label} ${model} - ${color}`.toUpperCase();
 
       return {
@@ -93,7 +89,9 @@ const PurchaseOrder = () => {
     const totalCostCents = unitCostCents + rateioFrete;
     
     const sellCents = Number(parsePriceToCents(item.sellPrice.replace(',', '.')));
-    const comissao = (sellCents * 5) / 100; 
+    
+    // CORREÇÃO AQUI: Multiplicação direta pela taxa decimal
+    const comissao = sellCents * TAXA_COMISSAO; 
     const profit = sellCents - totalCostCents - comissao;
     const margin = sellCents > 0 ? (profit / sellCents) * 100 : 0;
 
@@ -117,7 +115,6 @@ const PurchaseOrder = () => {
       for (const item of items) {
         const { totalCostCents, sellCents } = calculateFinancials(item);
         
-        // 1. Verificar/Criar Produto
         const { data: prod } = await supabase
           .from('products')
           .select('id')
@@ -130,7 +127,7 @@ const PurchaseOrder = () => {
           const { data: newP, error: insErr } = await supabase.from('products').insert([{
             name: item.productName,
             model: item.model, 
-            category: item.category_id, // Usando o ID técnico
+            category: item.category_id,
             color: item.color,
             cost_price_cents: totalCostCents, 
             sell_price_cents: sellCents,
@@ -149,7 +146,6 @@ const PurchaseOrder = () => {
           }).eq('id', pId);
         }
 
-        // 2. Atualizar Estoque (stock_items)
         const { data: st } = await supabase.from('stock_items')
           .select('id, quantity')
           .eq('product_id', pId)
