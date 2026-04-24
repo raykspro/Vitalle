@@ -27,7 +27,6 @@ const COLORS = [
   'Lilás', 'Fúcsia', 'Pistache', 'Tifany', 'Royal', 'Coral', 'Marrom'
 ];
 
-// MESTRE: Configuração central de taxa
 const TAXA_COMISSAO = 0.15; // 15% fixos
 
 const PurchaseOrder = () => {
@@ -90,7 +89,6 @@ const PurchaseOrder = () => {
     
     const sellCents = Number(parsePriceToCents(item.sellPrice.replace(',', '.')));
     
-    // CORREÇÃO MESTRE: Multiplicação direta para 15% real
     const comissao = sellCents * TAXA_COMISSAO; 
     const profit = sellCents - totalCostCents - comissao;
     const margin = sellCents > 0 ? (profit / sellCents) * 100 : 0;
@@ -115,7 +113,7 @@ const PurchaseOrder = () => {
       for (const item of items) {
         const { totalCostCents, sellCents } = calculateFinancials(item);
         
-        // CORREÇÃO: Busca usando ilike para evitar erro de Duplicidade (Unique Constraint)
+        // CORREÇÃO MESTRE: Busca inteligente para evitar duplicidade de produto
         const { data: prod } = await supabase
           .from('products')
           .select('id')
@@ -148,11 +146,12 @@ const PurchaseOrder = () => {
           }).eq('id', pId);
         }
 
-        // Lançamento em stock_items (Tabela padrão do sistema)
+        // CORREÇÃO MESTRE: Soma real de estoque (Update se existir, Insert se não)
         const { data: st } = await supabase.from('stock_items')
           .select('id, quantity')
           .eq('product_id', pId)
           .eq('size', item.size)
+          .eq('color', item.color) // Adicionado check de cor no estoque também
           .maybeSingle();
 
         if (st) {
@@ -188,7 +187,7 @@ const PurchaseOrder = () => {
           <h1 className="text-4xl font-black text-slate-800 uppercase italic tracking-tighter">Entrada de Material</h1>
           <p className="text-slate-400 font-bold text-sm uppercase">Vitalle Stock Intelligence</p>
         </div>
-        <Badge className="bg-magenta px-6 py-2 text-sm rounded-full shadow-xl">MODO INTELIGENTE ATIVO</Badge>
+        <Badge className="bg-magenta px-6 py-2 text-sm rounded-full shadow-xl text-white">MODO INTELIGENTE ATIVO</Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -260,7 +259,7 @@ const PurchaseOrder = () => {
                         <Input className="w-20 h-8 text-[11px] font-bold" value={item.sellPrice} onChange={e => updateItemField(idx, 'sellPrice', e.target.value)}/>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`rounded-md px-2 py-1 text-[9px] font-black ${margin > 30 ? 'bg-green-500' : 'bg-orange-500'}`}>
+                        <Badge className={`rounded-md px-2 py-1 text-[9px] font-black text-white ${margin > 30 ? 'bg-green-500' : 'bg-orange-500'}`}>
                           R${(profit/100).toFixed(2)} ({margin.toFixed(0)}%)
                         </Badge>
                       </TableCell>

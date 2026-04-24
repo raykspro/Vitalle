@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from '../lib/supabaseClient';
-import { Plus, Search, Shirt, Trash2, Loader2, X, Package } from "lucide-react";
+import { Plus, Search, Trash2, Loader2, Package, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,13 +23,9 @@ export default function Stock() {
   async function loadData() {
     setLoading(true);
     try {
-      // MESTRE: Padronizamos para 'stock_items' que é onde a Entrada de Material salva
       const { data: itemsRes, error: stockError } = await supabase
         .from('stock_items')
-        .select(`
-          *,
-          products ( name, sell_price_cents )
-        `)
+        .select(`*, products ( name, sell_price_cents )`)
         .order('id', { ascending: false });
 
       const { data: prodsRes } = await supabase
@@ -42,14 +38,14 @@ export default function Stock() {
       const formattedItems = itemsRes?.map(item => ({
         ...item,
         product_name: item.products?.name || "Produto Removido",
-        price: (item.products?.sell_price_cents || 0) / 100, // Converte centavos para Real
+        price: (item.products?.sell_price_cents || 0) / 100,
       })) || [];
 
       setStockItems(formattedItems);
       setProducts(prodsRes || []);
     } catch (error) {
       console.error("Erro Vitalle:", error);
-      toast.error("Erro ao carregar inventário: Recarregue o Schema no Supabase");
+      toast.error("Erro de conexão com o banco.");
     } finally {
       setLoading(false);
     }
@@ -58,18 +54,40 @@ export default function Stock() {
   async function handleSave() {
     if (!form.product_id || !form.size || !form.quantity) return toast.error("Preencha os campos!");
     
-    try {
-      // MESTRE: Upsert na tabela 'stock_items' para manter a sincronia
-      const { error: insertError } = await supabase
-        .from('stock_items')
-        .upsert([{
-          product_id: form.product_id,
-          size: form.size,
-          color: form.color.toUpperCase() || 'PADRÃO',
-          quantity: Number(form.quantity)
-        }], { onConflict: 'product_id, size, color' });
+    const colorUpper = form.color.toUpperCase() || 'PADRÃO';
+    const qtyToAdd = Number(form.quantity);
 
-      if (insertError) throw insertError;
+    try {
+      // MESTRE: Lógica de Soma Inteligente (Verifica se já existe para somar)
+      const { data: existingItem } = await supabase
+        .from('stock_items')
+        .select('id, quantity')
+        .eq('product_id', form.product_id)
+        .eq('size', form.size)
+        .eq('color', colorUpper)
+        .maybeSingle();
+
+      if (existingItem) {
+        // Se existe, soma a quantidade atual com a nova
+        const { error: updateError } = await supabase
+          .from('stock_items')
+          .update({ quantity: existingItem.quantity + qtyToAdd })
+          .eq('id', existingItem.id);
+        
+        if (updateError) throw updateError;
+      } else {
+        // Se não existe, cria o registro novo
+        const { error: insertError } = await supabase
+          .from('stock_items')
+          .insert([{
+            product_id: form.product_id,
+            size: form.size,
+            color: colorUpper,
+            quantity: qtyToAdd
+          }]);
+        
+        if (insertError) throw insertError;
+      }
       
       toast.success("Estoque Vitalle Atualizado!");
       setDialogOpen(false);
@@ -77,7 +95,7 @@ export default function Stock() {
       loadData();
     } catch (error) {
       console.error(error);
-      toast.error("Falha ao salvar. Verifique se o produto já existe.");
+      toast.error("Falha ao atualizar estoque.");
     }
   }
 
@@ -100,16 +118,16 @@ export default function Stock() {
   );
 
   return (
-    <div className="space-y-6 p-4 max-w-7xl mx-auto pb-32 bg-[#fcfcfc] min-h-screen">
+    <div className="space-y-6 p-4 max-w-7xl mx-auto pb-32 bg-[#fcfcfc] min-h-screen font-sans">
       <div className="flex flex-col gap-4">
         <h1 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Estoque Central</h1>
         <div className="relative w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
-            placeholder="Buscar modelo ou cor..." 
+            placeholder="BUSCAR MODELO OU COR..." 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
-            className="pl-12 rounded-2xl border-none shadow-md bg-white h-14 w-full font-bold" 
+            className="pl-12 rounded-2xl border-none shadow-md bg-white h-14 w-full font-bold text-slate-700" 
           />
         </div>
       </div>
@@ -124,37 +142,40 @@ export default function Stock() {
       {Object.keys(grouped).length === 0 ? (
         <div className="text-center py-20 rounded-[2rem] bg-white border-2 border-dashed border-slate-100 shadow-sm">
           <Package className="h-16 w-16 text-slate-200 mx-auto mb-4" />
-          <p className="text-slate-400 font-bold uppercase italic">Nenhum item detectado</p>
+          <p className="text-slate-400 font-bold uppercase italic">Nenhum item em estoque</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {Object.entries(grouped).map(([productName, items]) => (
-            <div key={productName} className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-              <div className="p-5 bg-slate-900 flex justify-between items-center">
-                <h3 className="font-black text-white uppercase italic text-lg truncate pr-2">{productName}</h3>
-                <span className="bg-[#D946EF] text-white px-4 py-1 rounded-full text-[12px] font-black uppercase">
+            <div key={productName} className="bg-[#0f172a] rounded-[2rem] shadow-2xl border border-slate-800 overflow-hidden">
+              <div className="p-5 bg-gradient-to-r from-[#0f172a] to-[#1e293b] flex justify-between items-center border-b border-white/5">
+                <div className="flex items-center gap-3">
+                   <Tag size={18} className="text-[#D946EF]" />
+                   <h3 className="font-black text-white uppercase italic text-lg truncate pr-2">{productName}</h3>
+                </div>
+                <span className="bg-[#D946EF] text-white px-4 py-1 rounded-full text-[12px] font-black uppercase tracking-tighter shadow-lg shadow-[#D946EF]/20">
                   {items.reduce((sum, i) => sum + i.quantity, 0)} TOTAL
                 </span>
               </div>
-              <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-[#D946EF] font-black shadow-sm border border-slate-100">
+                  <div key={item.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-[#D946EF]/30 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#0f172a] font-black text-xl shadow-xl">
                         {item.size}
                       </div>
                       <div>
-                        <p className="font-bold text-slate-700 text-sm uppercase">{item.color}</p>
-                        <p className="text-[10px] font-black text-slate-400 uppercase italic">Saldo: {item.quantity}</p>
+                        <p className="font-bold text-white text-sm uppercase italic">{item.color}</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase">Saldo: <span className="text-[#D946EF]">{item.quantity}</span></p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="text-slate-300 hover:text-red-500" onClick={async () => {
-                      if(confirm('Excluir do inventário?')){
+                    <Button variant="ghost" size="icon" className="text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-full" onClick={async () => {
+                      if(confirm('Excluir esta variação do estoque?')){
                         await supabase.from('stock_items').delete().eq('id', item.id);
                         loadData();
                       }
                     }}>
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </Button>
                   </div>
                 ))}
@@ -166,18 +187,18 @@ export default function Stock() {
 
       {/* Modal */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] rounded-[2rem] p-6 bg-white outline-none">
+        <DialogContent className="max-w-[95vw] rounded-[2rem] p-6 bg-white outline-none border-none">
           <DialogHeader className="mb-4 text-center">
             <DialogTitle className="text-xl font-black uppercase italic text-slate-900">Ajuste de Estoque</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Selecione o Modelo</Label>
+              <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Modelo</Label>
               <Select value={form.product_id} onValueChange={v => setForm(p => ({...p, product_id: v}))}>
                 <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-bold">
                   <SelectValue placeholder="Escolha um produto" />
                 </SelectTrigger>
-                <SelectContent className="max-h-60">
+                <SelectContent className="max-h-60 rounded-xl">
                   {products.map(p => <SelectItem key={p.id} value={p.id} className="font-bold uppercase text-xs">{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -190,23 +211,23 @@ export default function Stock() {
                   <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-none font-bold">
                     <SelectValue placeholder="Tam" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl">
                     {['P', 'M', 'G', 'GG', 'ÚNICO'].map(s => <SelectItem key={s} value={s} className="font-bold">{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Quantidade</Label>
+                <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Adicionar Qtd</Label>
                 <Input type="number" value={form.quantity} onChange={e => setForm(p => ({...p, quantity: e.target.value}))} className="rounded-xl h-12 bg-slate-50 border-none font-bold" />
               </div>
             </div>
 
             <div className="space-y-1">
               <Label className="text-[10px] font-black uppercase text-slate-400 ml-1">Cor</Label>
-              <Input value={form.color} onChange={e => setForm(p => ({...p, color: e.target.value}))} className="rounded-xl h-12 bg-slate-50 border-none font-bold" placeholder="Ex: PRETO" />
+              <Input value={form.color} onChange={e => setForm(p => ({...p, color: e.target.value}))} className="rounded-xl h-12 bg-slate-50 border-none font-bold" placeholder="EX: PRETO" />
             </div>
 
-            <Button onClick={handleSave} className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest mt-4">
+            <Button onClick={handleSave} className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest mt-4 shadow-xl active:scale-95 transition-transform">
               Confirmar Alteração
             </Button>
           </div>

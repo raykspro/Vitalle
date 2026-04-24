@@ -16,13 +16,11 @@ import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
 import Configuracoes from './pages/Configuracoes';
 import { PWAProvider, usePWA } from './lib/PWAContext';
-// IMPORTANTE: Importar o SidebarProvider
-// SidebarProvider removido - Layout gerencia mobile/desktop nativamente
 
 const PageLoader = () => (
   <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-900 text-white">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-magenta-500 mb-4"></div>
-    <p className="text-magenta-400 font-medium animate-pulse uppercase tracking-widest text-xs">Iniciando Vitalle...</p>
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#D946EF] mb-4"></div>
+    <p className="text-[#D946EF] font-black animate-pulse uppercase tracking-widest text-[10px] italic">Sincronizando Vitalle...</p>
   </div>
 );
 
@@ -41,16 +39,18 @@ function AppContent() {
   }, [setInstallPrompt]);
 
   return (
-    <div className="w-full h-screen">
+    <div className="w-full h-screen bg-slate-50">
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Navigate to="/vendas" replace />} />
+          
+          {/* MESTRE: Alterado de /vendas para /dashboard como entrada principal */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           <Route element={<AuthGuard />}>
             <Route element={<Layout />} >
-              <Route path="/vendas" element={<MobileSales />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/vendas" element={<MobileSales />} />
               <Route path="/products" element={<Products />} />
               <Route path="/stock" element={<Stock />} />
               <Route path="/customers" element={<Customers />} />
@@ -67,7 +67,8 @@ function AppContent() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/vendas" replace />} />
+          {/* Fallback seguro para o Dashboard */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
     </div>
