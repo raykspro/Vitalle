@@ -28,7 +28,7 @@ const COLORS = [
 ];
 
 // MESTRE: Configuração central de taxa
-const TAXA_COMISSAO = 0.15; // 15%
+const TAXA_COMISSAO = 0.15; // 15% fixos
 
 const PurchaseOrder = () => {
   const [orderText, setOrderText] = useState('');
@@ -90,7 +90,7 @@ const PurchaseOrder = () => {
     
     const sellCents = Number(parsePriceToCents(item.sellPrice.replace(',', '.')));
     
-    // CORREÇÃO AQUI: Multiplicação direta pela taxa decimal
+    // CORREÇÃO MESTRE: Multiplicação direta para 15% real
     const comissao = sellCents * TAXA_COMISSAO; 
     const profit = sellCents - totalCostCents - comissao;
     const margin = sellCents > 0 ? (profit / sellCents) * 100 : 0;
@@ -115,11 +115,12 @@ const PurchaseOrder = () => {
       for (const item of items) {
         const { totalCostCents, sellCents } = calculateFinancials(item);
         
+        // CORREÇÃO: Busca usando ilike para evitar erro de Duplicidade (Unique Constraint)
         const { data: prod } = await supabase
           .from('products')
           .select('id')
-          .eq('model', item.model)
-          .eq('color', item.color)
+          .ilike('model', item.model)
+          .ilike('color', item.color)
           .maybeSingle();
 
         let pId;
@@ -139,6 +140,7 @@ const PurchaseOrder = () => {
           pId = newP.id;
         } else {
           pId = prod.id;
+          // Atualiza dados financeiros do produto já existente
           await supabase.from('products').update({
             cost_price_cents: totalCostCents, 
             sell_price_cents: sellCents,
@@ -146,6 +148,7 @@ const PurchaseOrder = () => {
           }).eq('id', pId);
         }
 
+        // Lançamento em stock_items (Tabela padrão do sistema)
         const { data: st } = await supabase.from('stock_items')
           .select('id, quantity')
           .eq('product_id', pId)
@@ -173,7 +176,7 @@ const PurchaseOrder = () => {
       setConfirmOpen(false);
     } catch (e) { 
       console.error(e);
-      toast.error("Falha no lançamento: " + e.message); 
+      toast.error("Erro no processo: " + (e.message || "Verifique o console")); 
     }
     setLoading(false);
   };
