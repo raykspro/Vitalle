@@ -18,9 +18,7 @@ export default defineConfig({
         id: 'vitalle-app',
         name: 'Vitalle Management System',
         short_name: 'Vitalle',
-        description: 'Sistema de Gestão Vitalle',
-        theme_color: '#d946ef',
-        background_color: '#ffffff', // Cor de fundo ao abrir o app
+        description: 'Sistema de Gestão Vitalle',\n        theme_color: '#ffffff',\n        background_color: '#ffffff',
         display: 'standalone', // Faz abrir sem a barra do navegador
         orientation: 'portrait', // Trava em pé para facilitar o uso no estoque
         icons: [
