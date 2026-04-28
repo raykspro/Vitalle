@@ -10,17 +10,18 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: {
-        enabled: true // Ótimo para o Senhor testar o PWA enquanto desenvolve
+        enabled: true 
       },
-      // Garanta que todos os nomes de arquivos de ícone estejam aqui
       includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png'], 
       manifest: {
         id: 'vitalle-app',
         name: 'Vitalle Management System',
         short_name: 'Vitalle',
-        description: 'Sistema de Gestão Vitalle',\n        theme_color: '#ffffff',\n        background_color: '#ffffff',
-        display: 'standalone', // Faz abrir sem a barra do navegador
-        orientation: 'portrait', // Trava em pé para facilitar o uso no estoque
+        description: 'Sistema de Gestão Vitalle',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone', 
+        orientation: 'portrait', 
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -37,7 +38,6 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Isso garante que o app funcione bem offline
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       }
     })
