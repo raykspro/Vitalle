@@ -79,8 +79,8 @@ const MobileSales = () => {
       const stockItems = stockRes.data.map(item => ({
         stock_id: item.id,
         product_id: item.products.id,
-        name: item.products.name,
-        sell_price_cents: item.products.sell_price_cents,
+        name: item.products?.name || 'Produto Sem Nome',
+        sell_price_cents: item.products?.sell_price_cents || 0,
         image_url: item.products.image_url,
         category: item.products.category,
         size: item.size || 'Único',
