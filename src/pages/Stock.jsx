@@ -55,8 +55,8 @@ export default function Stock() {
     }
   }
 
-  // --- FUNÇÃO DE EXPORTAR CATÁLOGO ---
   const exportCatalogue = () => {
+    console.log('Gerando PDF...');
     const doc = new jsPDF();
     const date = new Date().toLocaleDateString('pt-BR');
     
@@ -161,6 +161,7 @@ export default function Stock() {
         <Button 
           onClick={exportCatalogue}
           className="bg-white border-2 border-slate-200 text-slate-900 hover:border-magenta hover:text-magenta font-black uppercase italic rounded-2xl h-12 px-6 transition-all shadow-md gap-2"
+          title="Clique para testar console.log"
         >
           <FileDown size={20} /> Exportar Catálogo PDF
         </Button>
@@ -215,7 +216,10 @@ export default function Stock() {
                       </div>
                       <div>
                         <p className="font-bold text-white text-sm uppercase italic tracking-wide">{item.color}</p>
-                        <p className="text-[10px] font-black text-slate-500 uppercase mt-1">Saldo: <span className="text-magenta text-xs ml-1">{item.quantity}</span></p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="bg-slate-100 text-slate-900 font-black text-xs px-3 py-1 rounded-full shadow-sm">R$ {item.price.toFixed(2)}</span>
+                          <div className="w-14 h-14 bg-white/20 border-3 border-magenta rounded-full flex items-center justify-center text-2xl font-black text-magenta shadow-xl">{item.quantity}</div>
+                        </div>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-full h-10 w-10" onClick={async () => {
@@ -232,7 +236,7 @@ export default function Stock() {
 
               {/* RODAPÉ DO CARD */}
               <div className="px-6 py-3 bg-black/20 flex justify-between items-center">
-                 <span className="text-[10px] font-bold text-slate-500 uppercase">Total em estoque: {items.reduce((sum, i) => sum + i.quantity, 0)} unidades</span>
+                 <span className="text-[10px] font-black text-slate-500 uppercase">Total em estoque: {items.reduce((sum, i) => sum + i.quantity, 0)} unidades</span>
                  <div className="flex gap-1">
                     {[...new Set(items.map(i => i.size))].map(s => (
                       <span key={s} className="text-[9px] font-black bg-white/10 text-white px-2 py-0.5 rounded-md">{s}</span>
