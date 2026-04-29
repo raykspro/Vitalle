@@ -60,10 +60,12 @@ const MobileSales = () => {
             products (
               id,
               name,
-              sale_price_cents,
+              sell_price_cents,
               image_url,
               category
             )
+            )
+
           `)
           .gt('quantity', 0)
           .order('name', { foreignTable: 'products', ascending: true }),
@@ -78,7 +80,7 @@ const MobileSales = () => {
         stock_id: item.id,
         product_id: item.products.id,
         name: item.products.name,
-        sale_price_cents: item.products.sale_price_cents,
+        sell_price_cents: item.products.sell_price_cents,
         image_url: item.products.image_url,
         category: item.products.category,
         size: item.size || 'Único',
