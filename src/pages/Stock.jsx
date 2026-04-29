@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-// MESTRE: Importações para o PDF (precisa rodar: npm install jspdf jspdf-autotable)
+// MESTRE: Importações para o PDF 
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
@@ -57,29 +57,29 @@ export default function Stock() {
 
   const exportCatalogue = () => {
     console.log('Gerando PDF...');
-    const doc = new jsPDF();
+    const doc = new jsPDF('p', 'mm');
     const date = new Date().toLocaleDateString('pt-BR');
     
     // Header do PDF
     doc.setFontSize(22);
-    doc.setTextColor(217, 70, 239); // Magenta Vitalle
+    doc.setTextColor(217, 70, 239);
     doc.text("VITALLE - CATÁLOGO DE PRODUTOS", 14, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(100);
     doc.text(`Gerado em: ${date} | Curitiba - PR`, 14, 28);
 
-    // Preparando os dados (Agrupando para o PDF)
+    // Preparando os dados para table
     const tableData = Object.entries(grouped).map(([name, items]) => {
-      // Pega tamanhos únicos e ordena
       const sizes = [...new Set(items.map(i => i.size))].sort().join(", ");
       const price = items[0]?.price ? `R$ ${items[0].price.toFixed(2)}` : "Consulte";
       return [name.toUpperCase(), sizes, price];
     });
 
+    // AutoTable call - plugin loaded by import
     doc.autoTable({
       startY: 35,
-      head: [['MODELO / DESCRIÇÃO', 'TAMANHOS DISPONÍVEIS', 'PREÇO']],
+      head: [['MODELO', 'TAMANHOS DISPONÍVEIS', 'PREÇO']],
       body: tableData,
       headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
       bodyStyles: { textColor: [50, 50, 50], fontSize: 9 },
