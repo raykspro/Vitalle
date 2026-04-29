@@ -66,7 +66,8 @@ const MobileSales = () => {
             )
           `)
           .gt('quantity', 0)
-          .order('products.name'),
+          .order('name', { foreignTable: 'products', ascending: true }),
+
         supabase.from('customers').select('id, name').order('name')
       ]);
 
