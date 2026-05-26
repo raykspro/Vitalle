@@ -9,11 +9,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Evita watch/scan desnecessário durante build (pode causar loop/travamento)
       devOptions: {
-        enabled: true 
+        enabled: false,
       },
-      includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png'], 
+      includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
+
         id: 'vitalle-app',
         name: 'Vitalle Management System',
         short_name: 'Vitalle',
@@ -38,7 +40,12 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Não monitorar/cache-bust da própria pasta de build
+        // Removido para compatibilidade com a versão do workbox-build usada
+        // dontCacheBustURLsMatching: { ... }
+
+        cleanupOutdatedCaches: true,
       }
     })
   ],

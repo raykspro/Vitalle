@@ -95,16 +95,19 @@ export default function Layout() {
         {/* Conteúdo Principal */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="h-16 border-b border-border bg-card/50 backdrop-blur-md flex items-center px-4 lg:px-8 gap-4 shrink-0">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-accent"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
             <h2 className="text-lg font-semibold text-foreground">
               {navItems.find((i) => i.to === location.pathname)?.label || "Sistema"}
             </h2>
           </header>
+
+          {/* BOTÃO MENU MOBILE SEMPRE VISÍVEL (não depende de estado de modal) */}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden fixed top-4 left-4 z-[99] h-12 w-12 rounded-2xl bg-white/90 backdrop-blur-md shadow-lg shadow-slate-900/10 border border-slate-200 flex items-center justify-center"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-5 w-5 text-slate-900" />
+          </button>
 
           <main className="flex-1 overflow-y-auto p-4 lg:p-8">
             <Outlet />
