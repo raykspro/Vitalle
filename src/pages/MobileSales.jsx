@@ -42,7 +42,8 @@ const MobileSales = () => {
 
   // Recalculate total whenever cart changes
   useEffect(() => {
-    const cents = cart.reduce((acc, item) => acc + (item.sale_price_cents * item.qty), 0);
+    // CORREÇÃO: Utilizando a variável correta sell_price_cents
+    const cents = cart.reduce((acc, item) => acc + ((item.sell_price_cents || 0) * item.qty), 0);
     setTotalCents(cents);
   }, [cart]);
 
@@ -64,8 +65,6 @@ const MobileSales = () => {
               image_url,
               category
             )
-            )
-
           `)
           .gt('quantity', 0)
           .order('name', { foreignTable: 'products', ascending: true }),
@@ -193,7 +192,7 @@ const MobileSales = () => {
 
       const saleId = saleData.id;
 
-      // Insert sale_items
+      // Insert sale_items com a variável correta sell_price_cents
       const saleItemsData = cart.map(item => ({
         sale_id: saleId,
         product_id: item.product_id,
@@ -201,8 +200,8 @@ const MobileSales = () => {
         size: item.size,
         color: item.color,
         quantity: item.qty,
-        unit_price: item.sale_price_cents,
-        total: item.sale_price_cents * item.qty
+        unit_price: item.sell_price_cents || 0,
+        total: (item.sell_price_cents || 0) * item.qty
       }));
 
       const { error: itemsErr } = await supabase.from('sale_items').insert(saleItemsData);
@@ -265,12 +264,11 @@ const MobileSales = () => {
             disabled={cart.length === 0}
           >
             <ShoppingCart size={24} className="text-slate-900" />
-{hasCart && (
+            {hasCart && (
               <span className="absolute -top-1 -right-1 bg-[#D946EF] text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
                 {cart.length}
               </span>
             )}
-
           </Button>
         </div>
       </div>
@@ -331,9 +329,10 @@ const MobileSales = () => {
                       <TrendingUp size={24} className="text-slate-400" />
                     </div>
                   )}
+                  {/* CORREÇÃO: Utilizando a variável correta sell_price_cents no grid */}
                   <div className="absolute top-2 right-2 bg-white/95 backdrop-blur px-2 py-1 rounded-xl shadow-sm">
                     <p className="text-[10px] font-black text-[#D946EF]">
-                      R$ {(product.sale_price_cents / 100).toFixed(2)}
+                      R$ {((product.sell_price_cents || 0) / 100).toFixed(2)}
                     </p>
                   </div>
                   <div className="absolute bottom-2 left-2 bg-emerald-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-sm">
@@ -347,7 +346,6 @@ const MobileSales = () => {
                     {product.size !== 'Único' && ` • ${product.size}`}
                     {product.color !== 'N/A' && ` • ${product.color}`}
                   </p>
-
                 </div>
               </div>
             ))
@@ -356,7 +354,7 @@ const MobileSales = () => {
       </div>
 
       {/* Bottom cart summary bar - iPhone thumb-friendly */}
-{hasCart && (
+      {hasCart && (
         <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-gradient-to-r from-slate-900 via-[#D946EF] to-purple-600 shadow-2xl">
           <div className="max-w-md mx-auto flex items-center justify-between">
             <div className="text-white">
@@ -373,7 +371,6 @@ const MobileSales = () => {
           </div>
         </div>
       )}
-
 
       {/* Sale Dialog */}
       <Dialog open={isSaleOpen} onOpenChange={setIsSaleOpen}>
@@ -430,9 +427,9 @@ const MobileSales = () => {
                     <p className="text-xs text-slate-500 font-medium mb-1">
                       {item.size !== 'Único' && item.size} {item.color !== 'N/A' && item.color}
                     </p>
-
+                    {/* CORREÇÃO: Utilizando a variável correta sell_price_cents no item do carrinho */}
                     <p className="text-[11px] font-black text-[#D946EF] tracking-tight">
-                      R$ {(item.sale_price_cents / 100).toFixed(2)} x{item.qty}
+                      R$ {((item.sell_price_cents || 0) / 100).toFixed(2)} x{item.qty}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1 shadow-sm">
