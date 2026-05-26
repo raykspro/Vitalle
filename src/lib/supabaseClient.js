@@ -1,5 +1,7 @@
-// Backward-compatible re-export for existing imports
-// O projeto usa principalmente `src/lib/supabase.ts`
-export { supabase as default } from './supabase';
+import { supabase } from './supabase';
+
+// Padronização: export nomeado para compatibilidade com imports existentes
+export { supabase };
+
 
 
