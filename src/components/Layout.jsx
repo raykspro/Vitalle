@@ -1,5 +1,5 @@
-import React, { useState, createContext, useContext } from "react";
-import { Home, Package, Shirt, DollarSign, Users, Truck, Settings, LogOut, Menu, Download, ShoppingCart, ChevronDown } from "lucide-react";
+import React, { useState, createContext } from "react";
+import { Home, Package, Shirt, DollarSign, Users, Truck, Settings, LogOut, Menu, ChevronDown, ShoppingCart } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { SignOutButton } from "@clerk/clerk-react";
@@ -8,7 +8,6 @@ import { Button } from "../components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { usePWA } from "../lib/PWAContext";
 
-// MESTRE: Exportando o contexto para que MobileSales e outras páginas possam usar
 export const LayoutContext = createContext(null);
 
 const navigation = [
@@ -60,7 +59,6 @@ export default function Layout() {
                 </Button>
               </DropdownMenuTrigger>
               
-              {/* CORREÇÃO AQUI: Tag aberta e classes de design Luxury aplicadas */}
               <DropdownMenuContent className="w-56 rounded-xl bg-white/95 backdrop-blur-sm border border-slate-200 shadow-2xl py-2 mt-2 z-[50]">
                 {item.children.map((child) => (
                   <DropdownMenuItem key={child.to} asChild>
@@ -102,7 +100,7 @@ export default function Layout() {
 
   return (
     <LayoutContext.Provider value={{ mobileOpen, setMobileOpen }}>
-      <div className="flex h-screen w-full bg-[#FDFBF7]">
+      <div className="flex h-screen w-full bg-[#FDFBF7] overflow-hidden">
         {/* MOBILE SHEET */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="left" className="p-0 w-80 bg-white border-r-0 h-full">
@@ -124,9 +122,27 @@ export default function Layout() {
           </div>
         </aside>
 
-        {/* MAIN CONTENT */}
-        <main className="lg:ml-72 w-full h-screen overflow-y-auto">
-          <Outlet />
+        {/* MAIN CONTENT CORRIGIDO COM HEADER MOBILE */}
+        <main className="flex flex-col lg:ml-72 w-full h-screen overflow-y-auto relative">
+          
+          {/* HEADER MOBILE - OS 3 RISQUINHOS (Invisível no PC, fixo no celular) */}
+          <header className="lg:hidden flex items-center p-4 bg-white border-b border-slate-100 sticky top-0 z-40 shadow-sm shrink-0">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setMobileOpen(true)}
+              className="mr-3"
+            >
+              <Menu className="h-6 w-6 text-slate-900" />
+            </Button>
+            <h1 className="text-xl font-black text-[#D946EF] tracking-tighter italic uppercase">VITALLE</h1>
+          </header>
+
+          {/* O CONTEÚDO DAS PÁGINAS (DASHBOARD, ESTOQUE, ETC) */}
+          <div className="flex-1">
+            <Outlet />
+          </div>
+          
         </main>
       </div>
     </LayoutContext.Provider>
