@@ -1,14 +1,115 @@
-import React, { useState } from "react";
-import { Plus, Search, Grid, List, Package } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Plus, Search, Grid, List } from "lucide-react";
 import { cn } from "../lib/utils";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Catalog() {
-  const [viewMode, setViewMode] = useState("grid"); // Alterna entre grade de fotos e lista de estoque
+  const [viewMode, setViewMode] = useState("grid"); // grid | list
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        const [productsRes, stockRes] = await Promise.all([
+          supabase
+            .from("products")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase.from("stock_items").select("*"),
+        ]);
+
+        const productsData = productsRes?.data || [];
+        const stockData = stockRes?.data || [];
+
+        const productsWithStock = productsData.map((p) => {
+          const total_stock = stockData
+            .filter((s) => s.product_id === p.id)
+            .reduce((acc, s) => acc + (Number(s.quantity) || 0), 0);
+
+          return { ...p, total_stock };
+        });
+
+        setProducts(productsWithStock);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAll();
+  }, []);
+
+  const formatBRLFromCents = (cents) => {
+    const numeric = Number(cents ?? 0);
+    const value = numeric / 100;
+    return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
+
+  const renderGrid = () => (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+      {products.map((p) => (
+        <div
+          key={p.id}
+          className="group bg-white/90 dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-lg transition-all"
+        >
+          <div className="p-4">
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#D946EF]">
+              {p.category || "—"}
+            </div>
+            <div className="font-black text-slate-900 dark:text-white text-sm uppercase mt-1 line-clamp-2">
+              {p.name || p.model || "Produto"}
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
+              <div
+                className={cn(
+                  "inline-flex items-center justify-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border",
+                  (p.total_stock ?? 0) > 0
+                    ? "bg-emerald-50/70 text-emerald-700 border-emerald-200"
+                    : "bg-orange-50/70 text-orange-700 border-orange-200"
+                )}
+              >
+                Estoque: {(p.total_stock ?? 0) > 0 ? `${p.total_stock} un` : "Sem estoque"}
+              </div>
+              <div className="text-[#D946EF] font-black italic text-lg">
+                {formatBRLFromCents(p.sell_price_cents)}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderList = () => (
+    <div className="flex flex-col gap-3">
+      {products.map((p) => (
+        <div
+          key={p.id}
+          className="flex items-center justify-between gap-4 bg-white/90 dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800 rounded-2xl px-5 py-4"
+        >
+          <div className="min-w-0">
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#D946EF]">
+              {p.category || "—"}
+            </div>
+            <div className="font-black text-slate-900 dark:text-white text-sm uppercase truncate">
+              {p.name || p.model || "Produto"}
+            </div>
+          </div>
+          <div className="text-[#D946EF] font-black italic text-base whitespace-nowrap">
+            {formatBRLFromCents(p.sell_price_cents)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-full w-full bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300 pb-20 p-4 md:p-10">
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
-        
         {/* CABEÇALHO */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex flex-col gap-1">
@@ -28,8 +129,8 @@ export default function Catalog() {
                 onClick={() => setViewMode("grid")}
                 className={cn(
                   "p-3 rounded-xl transition-all flex-1 sm:flex-none flex justify-center",
-                  viewMode === "grid" 
-                    ? "bg-slate-100 dark:bg-slate-800 text-[#D946EF]" 
+                  viewMode === "grid"
+                    ? "bg-slate-100 dark:bg-slate-800 text-[#D946EF]"
                     : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                 )}
               >
@@ -39,8 +140,8 @@ export default function Catalog() {
                 onClick={() => setViewMode("list")}
                 className={cn(
                   "p-3 rounded-xl transition-all flex-1 sm:flex-none flex justify-center",
-                  viewMode === "list" 
-                    ? "bg-slate-100 dark:bg-slate-800 text-[#D946EF]" 
+                  viewMode === "list"
+                    ? "bg-slate-100 dark:bg-slate-800 text-[#D946EF]"
                     : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                 )}
               >
@@ -66,17 +167,19 @@ export default function Catalog() {
           />
         </div>
 
-        {/* ÁREA DE CONTEÚDO (PLACEHOLDER) */}
-        <div className="rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 h-96 flex flex-col items-center justify-center text-center p-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-           <Package className="h-16 w-16 text-slate-300 dark:text-slate-700 mb-6" />
-           <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">
-             Layout Base Configurado
-           </h3>
-           <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mt-2 font-medium">
-             A estrutura está pronta para receber o banco de dados do Supabase. O próximo passo é integrar as funções de busca e o mapeamento dos itens.
-           </p>
-        </div>
-
+        {/* ÁREA DE CONTEÚDO */}
+        {loading ? (
+          <div className="rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 h-96 flex flex-col items-center justify-center text-center p-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#D946EF] mb-4" />
+            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">
+              Carregando catálogo...
+            </h3>
+          </div>
+        ) : viewMode === "grid" ? (
+          renderGrid()
+        ) : (
+          renderList()
+        )}
       </div>
     </div>
   );
