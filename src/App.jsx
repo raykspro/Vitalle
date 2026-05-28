@@ -7,8 +7,7 @@ import FinanceCashFlow from './pages/FinanceCashFlow';
 import FinancePayables from './pages/FinancePayables';
 import FinanceReceivables from './pages/FinanceReceivables';
 import FinanceCommissions from './pages/FinanceCommissions';
-import Products from './pages/Products';
-import Stock from './pages/Stock';
+import Catalog from './pages/Catalog';
 import PurchaseOrder from './pages/PurchaseOrder'; 
 import Login from './pages/Login';
 import MobileSales from './pages/MobileSales'; 
@@ -51,8 +50,8 @@ function AppContent() {
             <Route element={<Layout />} >
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/vendas" element={<MobileSales />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/stock" element={<Stock />} />
+              <Route path="/products" element={<Catalog />} />
+              <Route path="/stock" element={<Catalog />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/suppliers" element={<Suppliers />} />
               

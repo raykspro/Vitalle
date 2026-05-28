@@ -5,6 +5,7 @@ import { ClerkProvider } from '@clerk/clerk-react';
 import { Toaster } from 'sonner';
 import App from './App';
 import './index.css';
+import { ThemeProvider } from './lib/ThemeProvider';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -25,17 +26,19 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* O BrowserRouter deve ficar no nível mais alto, APENAS AQUI */}
-    <BrowserRouter>
-      <ClerkProvider 
-        publishableKey={PUBLISHABLE_KEY} 
-        signInForceRedirectUrl="/vendas"
-        signUpForceRedirectUrl="/vendas"
-        afterSignOutUrl="/login"
-      >
-        <Toaster position="top-center" richColors closeButton />
-        <App />
-      </ClerkProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      {/* O BrowserRouter deve ficar no nível mais alto, APENAS AQUI */}
+      <BrowserRouter>
+        <ClerkProvider 
+          publishableKey={PUBLISHABLE_KEY} 
+          signInForceRedirectUrl="/vendas"
+          signUpForceRedirectUrl="/vendas"
+          afterSignOutUrl="/login"
+        >
+          <Toaster position="top-center" richColors closeButton />
+          <App />
+        </ClerkProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   </React.StrictMode>
 );
