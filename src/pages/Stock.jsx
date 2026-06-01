@@ -1,315 +1,254 @@
-import { useState, useEffect } from "react";
-import { supabase } from '../lib/supabaseClient';
-import { Plus, Search, Trash2, Loader2, Package, Tag, AlertCircle, FileDown } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { supabase } from "../lib/supabaseClient";
+import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-// MESTRE: Importações para o PDF 
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+function formatInt(val) {
+  const n = Number(val ?? 0);
+  if (Number.isNaN(n)) return "0";
+  return String(n);
+}
+
+function getStockBadge(total) {
+  const t = Number(total ?? 0);
+  if (t <= 0) return { variant: "destructive", label: "Esgotado" };
+  if (t < 5) return { variant: "warning", label: "Baixo" };
+  return { variant: "success", label: "OK" };
+}
 
 export default function Stock() {
-  const [stockItems, setStockItems] = useState([]);
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ product_id: "", size: "", color: "", quantity: "" });
+
+  const [products, setProducts] = useState([]); // [{...product, total_quantity, variations:[{size,color,quantity}]}]
 
   useEffect(() => {
-    loadData();
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [productsRes, stockRes] = await Promise.all([
+          supabase
+            .from("products")
+            .select("id, name, model, category")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("stock_items")
+            .select("id, quantity, size, color, product_id")
+            .order("id", { ascending: true }),
+        ]);
+
+        if (productsRes.error) throw productsRes.error;
+        if (stockRes.error) throw stockRes.error;
+
+        const prods = productsRes?.data || [];
+        const stockItems = stockRes?.data || [];
+
+        const byProduct = new Map();
+        for (const p of prods) {
+          byProduct.set(p.id, {
+            ...p,
+            total_quantity: 0,
+            variations: [],
+          });
+        }
+
+        // Agregação por tamanho/cor
+        const variationKey = (size, color) => `${String(size ?? "").trim()}|${String(color ?? "").trim()}`;
+        const variationAgg = new Map(); // product_id -> Map(key -> qty)
+
+        for (const item of stockItems) {
+          const productId = item.product_id;
+          if (!byProduct.has(productId)) continue;
+
+          if (!variationAgg.has(productId)) variationAgg.set(productId, new Map());
+          const prodMap = variationAgg.get(productId);
+
+          const key = variationKey(item.size, item.color);
+          const prev = prodMap.get(key) ?? 0;
+          prodMap.set(key, prev + (Number(item.quantity) || 0));
+        }
+
+        // Construção final
+        for (const [productId, prod] of byProduct.entries()) {
+          const prodMap = variationAgg.get(productId) || new Map();
+          const variations = [];
+          let total_quantity = 0;
+
+          for (const [key, qty] of prodMap.entries()) {
+            const [sizeRaw, colorRaw] = key.split("|");
+            const size = sizeRaw || "Único";
+            const color = colorRaw || "N/A";
+            const quantity = Number(qty) || 0;
+            total_quantity += quantity;
+            variations.push({ size, color, quantity });
+          }
+
+          variations.sort((a, b) => {
+            const s = String(a.size).localeCompare(String(b.size));
+            if (s !== 0) return s;
+            return String(a.color).localeCompare(String(b.color));
+          });
+
+          byProduct.set(productId, { ...prod, total_quantity, variations });
+        }
+
+        const final = Array.from(byProduct.values());
+        setProducts(final);
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao carregar estoque.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, []);
 
-  async function loadData() {
-    setLoading(true);
-    try {
-      const { data: itemsRes, error: stockError } = await supabase
-        .from('stock_items')
-        .select(`*, products ( name, sell_price_cents )`)
-        .order('id', { ascending: false });
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return products;
 
-      const { data: prodsRes } = await supabase
-        .from('products')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (stockError) throw stockError;
-
-      const formattedItems = itemsRes?.map(item => ({
-        ...item,
-        product_name: item.products?.name || "Produto Removido",
-        price: (item.products?.sell_price_cents || 0) / 100,
-      })) || [];
-
-      setStockItems(formattedItems);
-      setProducts(prodsRes || []);
-    } catch (error) {
-      console.error("Erro Vitalle:", error);
-      toast.error("Erro de conexão mestre.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const exportCatalogue = () => {
-    console.log('Gerando PDF...');
-    const doc = new jsPDF('p', 'mm');
-    const date = new Date().toLocaleDateString('pt-BR');
-    
-    // Header do PDF
-    doc.setFontSize(22);
-    doc.setTextColor(217, 70, 239);
-    doc.text("VITALLE - CATÁLOGO DE PRODUTOS", 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Gerado em: ${date} | Curitiba - PR`, 14, 28);
-
-    // Preparando os dados para table
-    const tableData = Object.entries(grouped).map(([name, items]) => {
-      const sizes = [...new Set(items.map(i => i.size))].sort().join(", ");
-      const price = items[0]?.price ? `R$ ${items[0].price.toFixed(2)}` : "Consulte";
-      return [name.toUpperCase(), sizes, price];
+    return products.filter((p) => {
+      const name = (p.name || p.model || "").toLowerCase();
+      const category = (p.category || "").toLowerCase();
+      return name.includes(q) || category.includes(q);
     });
+  }, [products, search]);
 
-    // AutoTable call - plugin loaded by import
-    doc.autoTable({
-      startY: 35,
-      head: [['MODELO', 'TAMANHOS DISPONÍVEIS', 'PREÇO']],
-      body: tableData,
-      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
-      bodyStyles: { textColor: [50, 50, 50], fontSize: 9 },
-      columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 60, halign: 'center' },
-        2: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
-      },
-      alternateRowStyles: { fillColor: [250, 250, 250] },
-    });
-
-    doc.save(`Catalogo_Vitalle_${date.replace(/\//g, '-')}.pdf`);
-    toast.success("Catálogo pronto, Senhor!");
-  };
-
-  async function handleSave() {
-    if (!form.product_id || !form.size || !form.quantity) return toast.error("Preencha tudo, mestre!");
-    const colorUpper = (form.color || 'PADRÃO').toUpperCase();
-    const qtyToAdd = Number(form.quantity);
-
-    try {
-      const { data: existingItem } = await supabase
-        .from('stock_items')
-        .select('id, quantity')
-        .eq('product_id', form.product_id)
-        .eq('size', form.size)
-        .eq('color', colorUpper)
-        .maybeSingle();
-
-      if (existingItem) {
-        const { error: updateError } = await supabase
-          .from('stock_items')
-          .update({ quantity: existingItem.quantity + qtyToAdd })
-          .eq('id', existingItem.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from('stock_items')
-          .insert([{ product_id: form.product_id, size: form.size, color: colorUpper, quantity: qtyToAdd }]);
-        if (insertError) throw insertError;
-      }
-      toast.success("Estoque Vitalle Atualizado!");
-      setDialogOpen(false);
-      setForm({ product_id: "", size: "", color: "", quantity: "" });
-      loadData();
-    } catch (error) {
-      toast.error("Falha ao salvar no banco.");
-    }
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 bg-[#F8FAFC] dark:bg-slate-950 p-6">
+        <Loader2 className="h-10 w-10 animate-spin text-[#D946EF]" />
+        <p className="text-slate-500 dark:text-slate-400 font-black italic uppercase tracking-widest">
+          Sincronizando estoque...
+        </p>
+      </div>
+    );
   }
-
-  const filtered = stockItems.filter((s) =>
-    s.product_name.toLowerCase().includes(search.toLowerCase()) ||
-    s.color?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const grouped = filtered.reduce((acc, item) => {
-    if (!acc[item.product_name]) acc[item.product_name] = [];
-    acc[item.product_name].push(item);
-    return acc;
-  }, {});
-
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-[80vh] gap-4">
-      <Loader2 className="h-12 w-12 animate-spin text-magenta" />
-      <span className="font-black italic text-slate-400 uppercase tracking-widest animate-pulse">Sincronizando Vitalle...</span>
-    </div>
-  );
 
   return (
-    <div className="space-y-6 p-4 md:p-8 max-w-7xl mx-auto pb-40 bg-[#fcfcfc] min-h-screen font-sans">
-      
-      {/* HEADER VITRINE */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter">Estoque Central</h1>
-          <p className="text-[10px] font-black text-magenta uppercase tracking-widest">Painel de Controle & Vitrine</p>
-        </div>
-        
-        <Button 
-          onClick={exportCatalogue}
-          className="bg-white border-2 border-slate-200 text-slate-900 hover:border-magenta hover:text-magenta font-black uppercase italic rounded-2xl h-12 px-6 transition-all shadow-md gap-2"
-          title="Clique para testar console.log"
-        >
-          <FileDown size={20} /> Exportar Catálogo PDF
-        </Button>
-      </div>
+    <div className="min-h-full w-full bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300 pb-20 p-4 md:p-10">
+      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
+        {/* HEADER */}
+        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex flex-col gap-1">
+            <div className="h-1 w-12 bg-[#D946EF] mb-2" />
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
+              CONTROLE DE ESTOQUE
+            </h2>
+            <p className="text-slate-400 dark:text-slate-400 text-xs font-bold italic uppercase tracking-widest">
+              Auditoria por variação (Tamanho/Cor)
+            </p>
+          </div>
 
-      <div className="relative w-full shadow-2xl rounded-2xl overflow-hidden">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-        <Input 
-          placeholder="BUSCAR MODELO OU COR..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          className="pl-12 border-none bg-white h-16 w-full font-bold text-slate-700 text-base" 
-        />
-      </div>
+          <div className="relative w-full md:w-[420px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por produto ou categoria..."
+              className="pl-12 border-none bg-white dark:bg-slate-900/60 h-14 w-full font-bold text-slate-700 dark:text-white shadow-sm rounded-3xl"
+            />
+          </div>
+        </header>
 
-      <Button 
-        onClick={() => setDialogOpen(true)} 
-        className="fixed bottom-28 right-6 z-50 bg-magenta hover:opacity-90 text-white font-black uppercase rounded-full shadow-[0_10px_40px_rgba(217,70,239,0.4)] p-0 h-16 w-16 md:w-auto md:px-8 md:h-14 md:rounded-2xl"
-      >
-        <Plus className="h-8 w-8 md:mr-2" /> <span className="hidden md:inline">Lançar Avulso</span>
-      </Button>
+        {/* LISTA */}
+        {filtered.length === 0 ? (
+          <div className="rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 h-96 flex flex-col items-center justify-center text-center p-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+            <p className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Nenhum produto encontrado</p>
+          </div>
+        ) : (
+          <Accordion type="single" collapsible className="w-full">
+            {filtered.map((p, idx) => {
+              const name = p.name || p.model || "Produto";
+              const { variant, label } = getStockBadge(p.total_quantity);
+              const badgeClass =
+                variant === "destructive"
+                  ? "bg-red-500/15 text-red-500 border-red-500/25"
+                  : variant === "warning"
+                    ? "bg-orange-500/15 text-orange-500 border-orange-500/25"
+                    : "bg-emerald-500/15 text-emerald-500 border-emerald-500/25";
 
-      {Object.keys(grouped).length === 0 ? (
-        <div className="text-center py-24 rounded-[3rem] bg-white border-2 border-dashed border-slate-100 shadow-sm flex flex-col items-center">
-          <Package className="h-20 w-20 text-slate-100 mb-4" />
-          <p className="text-slate-400 font-bold uppercase italic tracking-widest">Nada no estoque, mestre.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-8">
-          {Object.entries(grouped).map(([productName, items]) => (
-            <div key={productName} className="bg-[#0f172a] rounded-[2.5rem] shadow-2xl border border-slate-800 overflow-hidden transition-all">
-              
-              {/* HEADER DO CARD - ESTILO VITRINE */}
-              <div className="p-6 bg-gradient-to-r from-[#0f172a] to-[#1e293b] flex justify-between items-center border-b border-white/5">
-                <div className="flex items-center gap-4">
-                   <Tag size={20} className="text-magenta" />
-                   <h3 className="font-black text-white uppercase italic text-lg md:text-xl tracking-tight">{productName}</h3>
-                </div>
-                <div className="text-right">
-                  <span className="block text-[9px] font-black text-slate-400 uppercase">Preço Vitrine</span>
-                  <span className="text-magenta font-black text-xl italic">R$ {items[0]?.price.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* LISTA DE VARIAÇÕES */}
-              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-5 bg-white/5 rounded-[1.5rem] border border-white/5 hover:border-magenta/30 transition-all">
-                    <div className="flex items-center gap-5">
-                      <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#0f172a] font-black text-2xl shadow-2xl">
-                        {item.size}
+              return (
+                <AccordionItem
+                  key={p.id}
+                  value={String(p.id)}
+                  className="border border-slate-100 dark:border-slate-800 rounded-[2rem] px-4 mb-4 bg-white/70 dark:bg-slate-900/40"
+                >
+                  <AccordionTrigger className="no-underline hover:no-underline">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full py-4">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#D946EF]">
+                          {p.category || "—"}
+                        </p>
+                        <p className="text-slate-900 dark:text-white font-black text-sm uppercase truncate">
+                          {name}
+                        </p>
                       </div>
-                      <div>
-                        <p className="font-bold text-white text-sm uppercase italic tracking-wide">{item.color}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="bg-slate-100 text-slate-900 font-black text-xs px-3 py-1 rounded-full shadow-sm">R$ {item.price.toFixed(2)}</span>
-                          <div className="w-14 h-14 bg-white/20 border-3 border-magenta rounded-full flex items-center justify-center text-2xl font-black text-magenta shadow-xl">{item.quantity}</div>
-                        </div>
+
+                      <div className="flex items-center gap-3">
+                        <Badge className={`border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeClass}`}>
+                          Total Estoque: {formatInt(p.total_quantity)}
+                        </Badge>
+                        <Badge className={`border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeClass}`}>
+                          {label}
+                        </Badge>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="text-slate-600 hover:text-red-500 hover:bg-red-500/10 rounded-full h-10 w-10" onClick={async () => {
-                      if(confirm('Mestre, deseja remover esta variação?')){
-                        await supabase.from('stock_items').delete().eq('id', item.id);
-                        loadData();
-                      }
-                    }}>
-                      <Trash2 size={20} />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  </AccordionTrigger>
 
-              {/* RODAPÉ DO CARD */}
-              <div className="px-6 py-3 bg-black/20 flex justify-between items-center">
-                 <span className="text-[10px] font-black text-slate-500 uppercase">Total em estoque: {items.reduce((sum, i) => sum + i.quantity, 0)} unidades</span>
-                 <div className="flex gap-1">
-                    {[...new Set(items.map(i => i.size))].map(s => (
-                      <span key={s} className="text-[9px] font-black bg-white/10 text-white px-2 py-0.5 rounded-md">{s}</span>
-                    ))}
-                 </div>
-              </div>
-            </div>
-          ))}
+                  <AccordionContent>
+                    <div className="pb-4">
+                      {p.variations.length === 0 ? (
+                        <div className="py-3 text-slate-500 dark:text-slate-400 text-sm font-semibold">
+                          Sem variações cadastradas.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3">
+                          {p.variations.map((v, i2) => (
+                            <div
+                              key={`${v.size}-${v.color}-${i2}`}
+                              className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-5 py-4"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[#D946EF]">Variação</p>
+                                <p className="text-slate-900 dark:text-white font-black text-sm uppercase truncate">
+                                  Tamanho: {v.size} | Cor: {v.color}
+                                </p>
+                              </div>
+                              <Badge
+                                className={
+                                  v.quantity <= 0
+                                    ? "bg-red-500/15 text-red-500 border-red-500/25"
+                                    : v.quantity < 5
+                                      ? "bg-orange-500/15 text-orange-500 border-orange-500/25"
+                                      : "bg-emerald-500/15 text-emerald-500 border-emerald-500/25"
+                                }
+                              >
+                                Qtd: {formatInt(v.quantity)}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        )}
+
+        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          Dica: use a busca para filtrar por nome do produto ou categoria.
         </div>
-      )}
-
-      {/* MODAL DE AJUSTE (MANTIDO ORIGINAL) */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-md rounded-[2.5rem] p-8 bg-white outline-none border-none shadow-3xl">
-          <DialogHeader className="mb-6 text-center flex flex-col items-center">
-            <div className="w-12 h-12 bg-magenta/10 rounded-full flex items-center justify-center mb-2">
-                <AlertCircle className="text-magenta w-6 h-6" />
-            </div>
-            <DialogTitle className="text-2xl font-black uppercase italic text-slate-900 tracking-tighter">Ajuste de Estoque</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase text-slate-400 ml-2 tracking-widest">Modelo do Produto</Label>
-              <Select value={form.product_id} onValueChange={v => setForm(p => ({...p, product_id: v}))}>
-                <SelectTrigger className="rounded-2xl h-14 bg-slate-50 border-none font-bold text-slate-700 shadow-inner">
-                  <SelectValue placeholder="Selecione o produto..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-64 rounded-2xl border-none shadow-2xl">
-                  {products.map(p => <SelectItem key={p.id} value={p.id} className="font-bold uppercase text-[11px] py-3">{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[11px] font-black uppercase text-slate-400 ml-2 tracking-widest">Tamanho</Label>
-                <Select value={form.size} onValueChange={v => setForm(p => ({...p, size: v}))}>
-                  <SelectTrigger className="rounded-2xl h-14 bg-slate-50 border-none font-bold shadow-inner">
-                    <SelectValue placeholder="Tam" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-none shadow-2xl">
-                    {['P', 'M', 'G', 'GG', 'ÚNICO'].map(s => <SelectItem key={s} value={s} className="font-bold">{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[11px] font-black uppercase text-slate-400 ml-2 tracking-widest">Quantidade</Label>
-                <Input 
-                    type="number" 
-                    inputMode="numeric"
-                    value={form.quantity} 
-                    onChange={e => setForm(p => ({...p, quantity: e.target.value}))} 
-                    className="rounded-2xl h-14 bg-slate-50 border-none font-black text-lg text-center shadow-inner" 
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[11px] font-black uppercase text-slate-400 ml-2 tracking-widest">Cor da Peça</Label>
-              <Input 
-                value={form.color} 
-                onChange={e => setForm(p => ({...p, color: e.target.value}))} 
-                className="rounded-2xl h-14 bg-slate-50 border-none font-bold uppercase shadow-inner" 
-                placeholder="EX: ROSA PINK" 
-              />
-            </div>
-
-            <Button onClick={handleSave} className="w-full h-16 rounded-[1.5rem] bg-slate-900 text-white font-black uppercase italic tracking-widest mt-6 shadow-2xl active:scale-95 transition-all text-base">
-              Confirmar Estoque
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      </div>
     </div>
   );
 }
+

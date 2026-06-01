@@ -15,6 +15,7 @@ import MobileSales from './pages/MobileSales';
 import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
 import Configuracoes from './pages/Configuracoes';
+import Stock from './pages/Stock';
 import { PWAProvider, usePWA } from './lib/PWAContext';
 
 const PageLoader = () => (
@@ -53,7 +54,7 @@ function AppContent() {
               <Route path="/vendas" element={<MobileSales />} />
               <Route path="/products" element={<Catalog />} />
               <Route path="/produtos/novo" element={<NewProduct />} />
-              <Route path="/stock" element={<Catalog />} />
+              <Route path="/estoque" element={<Stock />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/suppliers" element={<Suppliers />} />
               

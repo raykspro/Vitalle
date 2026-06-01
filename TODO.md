@@ -1,12 +1,7 @@
-# TODO - Correções Stock.jsx e PWA
+# TODO
 
-## Passos do Plano Aprovado:
-
-- [x] Confirmar plano com usuário
-- [x] 1. Editar public/manifest.json (cores para #ffffff)\n- [x] 2. Editar vite.config.js (theme_color para #ffffff)\n  
-- [ ] 3. Instalar dependências jsPDF: `npm install jspdf jspdf-autotable`
-- [ ] 4. Testar splash screen PWA (iPhone branco)
-- [ ] 5. Testar export PDF em Stock (colunas MODELO, TAMANHOS, PREÇO)
-
-**Status:** Iniciando edições PWA...
+- [ ] Atualizar/reescrever `src/pages/Stock.jsx` para controle logístico por variação (tamanho/cor), conectando Supabase via Promise.all e mantendo Luxury + Dark Mode.
+- [ ] Garantir UI de auditoria em cards/accordion com total por produto e alertas (Esgotado <vermelho>, Estoque Baixo <laranja>)
+- [ ] Garantir que rota `/stock` (e/ou `/estoque`) no roteador principal aponte para `Stock.jsx`.
+- [ ] Validar build/lint e que a página carrega sem erros.
 
