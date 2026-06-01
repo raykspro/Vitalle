@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "../lib/supabaseClient";
 import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
 
 function formatInt(val) {
   const n = Number(val ?? 0);
@@ -24,7 +24,7 @@ export default function Stock() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const [products, setProducts] = useState([]); // [{...product, total_quantity, variations:[{size,color,quantity}]}]
+  const [products, setProducts] = useState([]); // [{...product, total_quantity, variations:[{size,color,quantity, stock_item_id}]}]
 
   useEffect(() => {
     const load = async () => {

@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Trash2, Edit, Save, UserPlus, X } from 'lucide-react';
+import { Search, Edit, Save, UserPlus } from 'lucide-react';
 import InputMask from 'react-input-mask';
 import { toast } from "sonner";
 

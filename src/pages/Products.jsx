@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, Loader2, Camera, Edit3, Package, Layers } from "lucide-react";
+import { Plus, X, Loader2, Camera, Edit3, Package } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label"; 
 import { Button } from "@/components/ui/button";

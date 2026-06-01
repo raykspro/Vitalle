@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { TrendingUp, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatPriceDisplay, parsePriceToCents, addCents } from '@/lib/formatters';
+import { formatPriceDisplay, addCents } from '@/lib/formatters';
 import { useUser } from '@clerk/clerk-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';

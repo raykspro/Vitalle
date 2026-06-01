@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Calendar, Loader2 } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatPriceDisplay, parsePriceToCents } from '@/lib/formatters';
+import { formatPriceDisplay } from '@/lib/formatters';
 import { useUser } from '@clerk/clerk-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '../lib/supabaseClient';

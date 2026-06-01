@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Save, Tag, DollarSign, Image as ImageIcon, Box } from "lucide-react";
+import { ArrowLeft, Save, Tag, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "../lib/utils";
 import { supabase } from "../lib/supabaseClient";
 import { toast } from "sonner";
 
