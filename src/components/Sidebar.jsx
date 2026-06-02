@@ -22,6 +22,7 @@ const vitalleNav = [
   { to: "/vendas", icon: ShoppingCart, label: "Vendas" },
   { to: "/products", icon: Package, label: "Produtos" },
   { to: "/stock", icon: Shirt, label: "Estoque" },
+
   { to: "/customers", icon: Users, label: "Clientes" },
   { to: "/suppliers", icon: Truck, label: "Fornecedores" },
   { to: "/finance", icon: DollarSign, label: "Financeiro" },

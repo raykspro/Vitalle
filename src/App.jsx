@@ -54,7 +54,7 @@ function AppContent() {
               <Route path="/vendas" element={<MobileSales />} />
               <Route path="/products" element={<Catalog />} />
               <Route path="/produtos/novo" element={<NewProduct />} />
-              <Route path="/estoque" element={<Stock />} />
+              <Route path="/stock" element={<Stock />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/suppliers" element={<Suppliers />} />
               

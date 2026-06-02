@@ -6,7 +6,6 @@ import { supabase } from "../lib/supabaseClient";
 import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-
 function formatInt(val) {
   const n = Number(val ?? 0);
   if (Number.isNaN(n)) return "0";
@@ -24,7 +23,7 @@ export default function Stock() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
-  const [products, setProducts] = useState([]); // [{...product, total_quantity, variations:[{size,color,quantity, stock_item_id}]}]
+  const [products, setProducts] = useState([]); // [{...product, total_quantity, variations:[{size,color,quantity}]}]
 
   useEffect(() => {
     const load = async () => {
@@ -96,8 +95,7 @@ export default function Stock() {
           byProduct.set(productId, { ...prod, total_quantity, variations });
         }
 
-        const final = Array.from(byProduct.values());
-        setProducts(final);
+        setProducts(Array.from(byProduct.values()));
       } catch (err) {
         console.error(err);
         toast.error("Erro ao carregar estoque.");
@@ -122,28 +120,21 @@ export default function Stock() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 bg-[#F8FAFC] dark:bg-slate-950 p-6">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 bg-[#F8FAFC] p-6">
         <Loader2 className="h-10 w-10 animate-spin text-[#D946EF]" />
-        <p className="text-slate-500 dark:text-slate-400 font-black italic uppercase tracking-widest">
-          Sincronizando estoque...
-        </p>
+        <p className="text-slate-500 font-black italic uppercase tracking-widest">Sincronizando estoque...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full w-full bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-300 pb-20 p-4 md:p-10">
+    <div className="min-h-full w-full bg-[#F8FAFC] transition-colors duration-300 pb-20 p-4 md:p-10">
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
-        {/* HEADER */}
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex flex-col gap-1">
             <div className="h-1 w-12 bg-[#D946EF] mb-2" />
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
-              CONTROLE DE ESTOQUE
-            </h2>
-            <p className="text-slate-400 dark:text-slate-400 text-xs font-bold italic uppercase tracking-widest">
-              Auditoria por variação (Tamanho/Cor)
-            </p>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter">CONTROLE DE ESTOQUE</h2>
+            <p className="text-slate-400 text-xs font-bold italic uppercase tracking-widest">Auditoria por variação (Tamanho/Cor)</p>
           </div>
 
           <div className="relative w-full md:w-[420px]">
@@ -152,21 +143,21 @@ export default function Stock() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por produto ou categoria..."
-              className="pl-12 border-none bg-white dark:bg-slate-900/60 h-14 w-full font-bold text-slate-700 dark:text-white shadow-sm rounded-3xl"
+              className="pl-12 border-none bg-white h-14 w-full font-bold text-slate-700 shadow-sm rounded-3xl"
             />
           </div>
         </header>
 
-        {/* LISTA */}
         {filtered.length === 0 ? (
-          <div className="rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-slate-800 h-96 flex flex-col items-center justify-center text-center p-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-            <p className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Nenhum produto encontrado</p>
+          <div className="rounded-[3rem] border-2 border-dashed border-slate-200 h-96 flex flex-col items-center justify-center text-center p-6 bg-white/50 backdrop-blur-sm">
+            <p className="text-xl font-black text-slate-900 uppercase tracking-tight italic">Nenhum produto encontrado</p>
           </div>
         ) : (
           <Accordion type="single" collapsible className="w-full">
-            {filtered.map((p, idx) => {
+            {filtered.map((p) => {
               const name = p.name || p.model || "Produto";
               const { variant, label } = getStockBadge(p.total_quantity);
+
               const badgeClass =
                 variant === "destructive"
                   ? "bg-red-500/15 text-red-500 border-red-500/25"
@@ -178,26 +169,20 @@ export default function Stock() {
                 <AccordionItem
                   key={p.id}
                   value={String(p.id)}
-                  className="border border-slate-100 dark:border-slate-800 rounded-[2rem] px-4 mb-4 bg-white/70 dark:bg-slate-900/40"
+                  className="border border-slate-100 rounded-[2rem] px-4 mb-4 bg-white/70"
                 >
                   <AccordionTrigger className="no-underline hover:no-underline">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full py-4">
                       <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-[#D946EF]">
-                          {p.category || "—"}
-                        </p>
-                        <p className="text-slate-900 dark:text-white font-black text-sm uppercase truncate">
-                          {name}
-                        </p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[#D946EF]">{p.category || "—"}</p>
+                        <p className="text-slate-900 font-black text-sm uppercase truncate">{name}</p>
                       </div>
 
                       <div className="flex items-center gap-3">
                         <Badge className={`border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeClass}`}>
                           Total Estoque: {formatInt(p.total_quantity)}
                         </Badge>
-                        <Badge className={`border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeClass}`}>
-                          {label}
-                        </Badge>
+                        <Badge className={`border px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeClass}`}>{label}</Badge>
                       </div>
                     </div>
                   </AccordionTrigger>
@@ -205,22 +190,19 @@ export default function Stock() {
                   <AccordionContent>
                     <div className="pb-4">
                       {p.variations.length === 0 ? (
-                        <div className="py-3 text-slate-500 dark:text-slate-400 text-sm font-semibold">
-                          Sem variações cadastradas.
-                        </div>
+                        <div className="py-3 text-slate-500 text-sm font-semibold">Sem variações cadastradas.</div>
                       ) : (
                         <div className="grid grid-cols-1 gap-3">
                           {p.variations.map((v, i2) => (
                             <div
                               key={`${v.size}-${v.color}-${i2}`}
-                              className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-5 py-4"
+                              className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4"
                             >
                               <div className="min-w-0">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-[#D946EF]">Variação</p>
-                                <p className="text-slate-900 dark:text-white font-black text-sm uppercase truncate">
-                                  Tamanho: {v.size} | Cor: {v.color}
-                                </p>
+                                <p className="text-slate-900 font-black text-sm uppercase truncate">Tamanho: {v.size} | Cor: {v.color}</p>
                               </div>
+
                               <Badge
                                 className={
                                   v.quantity <= 0
@@ -244,9 +226,7 @@ export default function Stock() {
           </Accordion>
         )}
 
-        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          Dica: use a busca para filtrar por nome do produto ou categoria.
-        </div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Dica: use a busca para filtrar por nome do produto ou categoria.</div>
       </div>
     </div>
   );

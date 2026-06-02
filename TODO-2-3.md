@@ -1,30 +1,25 @@
-# TODO: Tarefas 2/3 - Cents-Only + Limpeza
+# TODO-2-3
 
-✅ 0. Criar TODO-2-3.md
-✅ 1. Limpeza entities/Product.json [COMPLETO]
+## Products.jsx refactor (enriquecimento)
+- [ ] Levantar critérios de “pendência” (sem foto, sem preço de venda, sem categoria)
+- [ ] Implementar query unindo `products` + `stock_items` (agregação para mostrar presença/variações)
+- [x] Implementar UI de lista com badges de pendência
+- [x] Implementar formulário de enriquecimento:
 
-⬜ 2. Limpeza Products.jsx
-- Remover old price refs
+  - [x] upload para `products/image_url`
 
-⬜ 2. Limpeza Products.jsx
-- Remover old price: parseFloat, old fields in insert/state
-- Form/UI unchanged
+  - [ ] input custo (cost_price)
+  - [ ] input margem desejada (%) => calcula sell_price
+  - [x] select categoria
+  - [x] textarea descrição
 
-⬜ 3. Limpeza Stock.jsx
-- p?.sell_price → formatPriceDisplay(p.sell_price_cents)
 
-⬜ 4. Finance.jsx
-- Import utils
-- records.reduce(acc + amount → addCents(parsePriceToCents(record.amount), 0n)
-- Displays toFixed → formatPriceDisplay
+- [ ] Persistência:
+  - [ ] `.update()` em `products` por `id`
+- [ ] Remover campos de criação (model/sku/nome) do formulário
+- [ ] Garantir design “Luxury Light” (sem `dark:`)
 
-⬜ 5. PurchaseOrder.jsx
-- items.cost_price: string → cents
-- calculateTotal(): reduce Number(qty)*Number(cost) → addCents(qtyC * costCents)
-- Import utils
 
-⬜ 6. App.jsx verify/clean
-- Check imports/routes duplicates
-
-⬜ 7. Test: npm run dev, test all pages totals precise
+## Stock.jsx
+- [x] Reverter design dark -> Luxury Light
 
